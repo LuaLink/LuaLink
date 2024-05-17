@@ -1,14 +1,11 @@
-package xyz.galaxyy.lualink.lua
+package xyz.galaxyy.lualink.api.lua
 
-import com.github.only52607.luakt.lib.LuaKotlinExLib
-import com.github.only52607.luakt.lib.LuaKotlinLib
 import org.bukkit.Bukkit
 import org.bukkit.event.HandlerList
-import org.luaj.vm2.LuaError
-import org.luaj.vm2.lib.jse.JsePlatform
+import party.iroiro.luajava.Lua
+import party.iroiro.luajava.luajit.LuaJit
+import party.iroiro.luajava.value.LuaValue
 import xyz.galaxyy.lualink.LuaLink
-import xyz.galaxyy.lualink.lua.misc.PrintOverride
-import xyz.galaxyy.lualink.lua.wrappers.LuaEnumWrapper
 import java.io.File
 
 class LuaScriptManager(private val plugin: LuaLink) {
@@ -19,32 +16,26 @@ class LuaScriptManager(private val plugin: LuaLink) {
     }
 
     fun loadScript(file: File) {
-        val globals = JsePlatform.standardGlobals()
-        val script = LuaScript(this.plugin, file, globals)
-        globals.load(LuaKotlinLib())
-        globals.load(LuaKotlinExLib())
-        globals.set("script", script)
-        globals.set("print", PrintOverride(this.plugin))
-        globals.set("utils", LuaUtils()) // Passing script to LuaUtils for state
-        globals.set("scheduler", LuaScheduler(this.plugin, script)) // Passing script to LuaScheduler for state
-        globals.set("enums", LuaEnumWrapper())
-        globals.set("import", LuaImport())
-        globals.set("addons", LuaAddons())
+        val lua: Lua =
+            LuaJit() // Perhaps a way to have a script specify which Lua implementation to use? (e.g. LuaJit, Lua 5.4, etc.)
+        val script: LuaScript =
+            LuaScript(this.plugin, file, lua) // Script contains some state and metadata about the script
+        lua.openLibraries()
+        lua.push(script, Lua.Conversion.NONE)
+        lua.setGlobal("script")
+        lua.push(LuaScheduler(this.plugin, script), Lua.Conversion.NONE)
+        lua.setGlobal("scheduler")
         this.plugin.logger.info("Loading script ${file.name}")
-        try {
-            globals.loadfile(file.path).call()
-        } catch (e: LuaError) {
-            this.plugin.logger.severe("LuaLink encountered an error while loading ${file.name}: ${e.message}")
+        val code = file.readText()
+        val err = lua.run(code)
+        if (err != Lua.LuaError.OK) {
+            this.plugin.logger.severe("LuaLink encountered an error while loading ${file.name}: ${script.getLastErrorMessage()}")
+            lua.close()
             return
         }
         loadedScripts.add(script)
-        if (script.onLoadCB?.isfunction() == true) {
-            try {
-                script.onLoadCB?.call()
-            } catch (e: LuaError) {
-                this.plugin.logger.severe("LuaLink encountered an error while called onLoad for ${file.name}: ${e.message}")
-                return
-            }
+        if (script.onLoadCB != null) {
+            script.onLoadCB?.call()
         }
         Bukkit.getServer().javaClass.getMethod("syncCommands").invoke(Bukkit.getServer())
         this.plugin.logger.info("Loaded script ${file.name}")
@@ -65,19 +56,15 @@ class LuaScriptManager(private val plugin: LuaLink) {
         script.tasks.forEach { taskId ->
             Bukkit.getScheduler().cancelTask(taskId)
         }
-        if (script.onUnloadCB?.isfunction() == true) {
-            try {
-                script.onUnloadCB?.call()
-            } catch (e: LuaError) {
-                this.plugin.logger.severe("LuaLink encountered an error while called onUnload for ${script.file.name}: ${e.message}")
-                return
-            }
+        if (script.onUnloadCB != null) {
+            script.onUnloadCB?.call()
         }
+        script.lua.close()
         this.loadedScripts.remove(script)
     }
 
     fun disableScript(script: LuaScript) {
-        script.file.renameTo(File(script.file.path+".d"))
+        script.file.renameTo(File(script.file.path + ".d"))
         this.unLoadScript(script)
     }
 
@@ -88,11 +75,11 @@ class LuaScriptManager(private val plugin: LuaLink) {
 
     fun loadScripts() {
         this.plugin.logger.info("Loading scripts...")
-        if (!File(this.plugin.dataFolder.path+"/scripts").exists()) {
-            File(this.plugin.dataFolder.path+"/scripts").mkdirs()
+        if (!File(this.plugin.dataFolder.path + "/scripts").exists()) {
+            File(this.plugin.dataFolder.path + "/scripts").mkdirs()
         }
 
-        File(this.plugin.dataFolder.path+"/scripts").walk().forEach { file ->
+        File(this.plugin.dataFolder.path + "/scripts").walk().forEach { file ->
             if (file.extension == "lua") {
                 if (file.name.startsWith(".")) {
                     return@forEach

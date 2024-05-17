@@ -4,8 +4,8 @@ import cloud.commandframework.arguments.parser.ArgumentParseResult
 import cloud.commandframework.arguments.parser.ArgumentParser
 import cloud.commandframework.context.CommandContext
 import cloud.commandframework.exceptions.parsing.NoInputProvidedException
-import xyz.galaxyy.lualink.lua.LuaScript
-import xyz.galaxyy.lualink.lua.LuaScriptManager
+import xyz.galaxyy.lualink.api.lua.LuaScript
+import xyz.galaxyy.lualink.api.lua.LuaScriptManager
 import java.util.*
 
 class LoadedScriptParser<C: Any>(private val scriptManager: LuaScriptManager)  : ArgumentParser<C, LuaScript> {

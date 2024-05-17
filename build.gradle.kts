@@ -1,3 +1,4 @@
+import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 import io.papermc.hangarpublishplugin.model.Platforms
 import net.minecrell.pluginyml.bukkit.BukkitPluginDescription
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
@@ -8,6 +9,7 @@ plugins {
     id("com.modrinth.minotaur") version "2.8.7"
     id("io.papermc.hangar-publish-plugin") version "0.1.2"
     id("maven-publish")
+    id("com.github.johnrengelman.shadow") version "8.1.1"
     application
 }
 
@@ -26,23 +28,27 @@ repositories {
 
 val cloudVersion: String by project
 val luaKTVersion: String by project
-
+val luaJavaVersion: String by project
 dependencies {
     testImplementation(kotlin("test"))
     library(kotlin("stdlib"))
     api(kotlin("stdlib"))
     compileOnly("org.purpurmc.purpur:purpur-api:1.20.1-R0.1-SNAPSHOT")
-    library("com.github.only52607.luakt:luakt:$luaKTVersion")
-    library("com.github.only52607.luakt:luakt-core:$luaKTVersion")
-    library("com.github.only52607.luakt:luakt-extension:$luaKTVersion")
-    library("com.github.only52607.luakt:luakt-luaj:$luaKTVersion")
-    api("com.github.only52607.luakt:luakt:$luaKTVersion")
-    api("com.github.only52607.luakt:luakt-core:$luaKTVersion")
-    api("com.github.only52607.luakt:luakt-extension:$luaKTVersion")
-    api("com.github.only52607.luakt:luakt-luaj:$luaKTVersion")
+    implementation("party.iroiro.luajava:luajava:$luaJavaVersion")
+    implementation("party.iroiro.luajava:luajit:$luaJavaVersion")
+    implementation("party.iroiro.luajava:luajit-platform:$luaJavaVersion:natives-desktop")
     library("cloud.commandframework:cloud-paper:$cloudVersion")
     library("cloud.commandframework:cloud-brigadier:$cloudVersion")
     library("cloud.commandframework:cloud-annotations:$cloudVersion")
+}
+
+tasks.withType<ShadowJar> {
+    dependencies {
+        include(dependency("party.iroiro.luajava:luajit-platform:$luaJavaVersion:natives-desktop"))
+        include(dependency("party.iroiro.luajava:luajava:$luaJavaVersion"))
+        include(dependency("party.iroiro.luajava:luajit:$luaJavaVersion"))
+        include(dependency("com.badlogicgames.gdx:gdx-jnigen-loader:2.3.1"))
+    }
 }
 
 paper {

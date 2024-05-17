@@ -9,10 +9,9 @@ import cloud.commandframework.annotations.suggestions.Suggestions
 import cloud.commandframework.context.CommandContext
 import org.bukkit.command.CommandSender
 import org.bukkit.entity.Player
-import org.luaj.vm2.lib.jse.JsePlatform
 import xyz.galaxyy.lualink.LuaLink
-import xyz.galaxyy.lualink.lua.LuaScript
-import xyz.galaxyy.lualink.lua.LuaScriptManager
+import xyz.galaxyy.lualink.api.lua.LuaScript
+import xyz.galaxyy.lualink.api.lua.LuaScriptManager
 import java.io.File
 
 @Suppress("unused")
@@ -76,6 +75,5 @@ class LuaLinkCommands(private val plugin: LuaLink, private val scriptManager: Lu
     @CommandMethod("lualink run <code>")
     @CommandPermission("lualink.scripts.run")
     fun runCode(sender: CommandSender, @Argument("code") @Greedy code: String) {
-        JsePlatform.standardGlobals().load(code).eval()
     }
 }

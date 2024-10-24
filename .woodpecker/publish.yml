@@ -4,7 +4,7 @@ when:
 
 steps:
   codebergpkgs:
-    image: gradle:8.7-jdk17-alpine@sha256:86b77d6cc9e7b1d6928e1ad95d8fb4bd1f71a796a77bfb86216f8d836e87f16e
+    image: gradle:8.10-jdk17-alpine@sha256:6e9712ecc0ead54b3afd661d2356b74adda9fdca8a8de9ace068f53f7c9a200a
     commands:
       - ./gradlew publishPluginPublicationToCodebergPackagesRepository
     secrets:

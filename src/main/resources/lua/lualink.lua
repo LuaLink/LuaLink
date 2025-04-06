@@ -40,7 +40,9 @@ local subcommands = {
             if #args == 2 then
                 local loadedScripts = ScriptManager.getLoadedScripts()
                 for _, scriptName in ipairs(loadedScripts) do
-                    table.insert(completions, scriptName)
+                    if scriptName:lower():find(args[2]:lower(), 1, true) then
+                        table.insert(completions, scriptName)
+                    end
                 end
             end
             return completions
@@ -85,7 +87,7 @@ local subcommands = {
                             break
                         end
                     end
-                    if not alreadyLoaded then
+                    if not alreadyLoaded and scriptName:lower():find(args[2]:lower(), 1, true) then
                         table.insert(completions, scriptName)
                     end
                 end
@@ -120,16 +122,18 @@ local subcommands = {
             if #args == 2 then
                 local loadedScripts = ScriptManager.getLoadedScripts()
                 for _, scriptName in ipairs(loadedScripts) do
-                    table.insert(completions, scriptName)
+                    if scriptName:lower():find(args[2]:lower(), 1, true) then
+                        table.insert(completions, scriptName)
+                    end
                 end
             end
             return completions
         end,
     },
 }
--- Script managment commands
+-- Script management commands
 script:registerCommand(function(sender, args)
-    -- If no args send a help command with availible subcommands with usage and description
+    -- If no args send a help command with available subcommands with usage and description
     if #args == 0 then
         sender:sendRichMessage("<green>Available commands:")
         for name, command in pairs(subcommands) do
@@ -174,7 +178,9 @@ end, {
         local completions = {}
         if #args == 1 then
             for name, command in pairs(subcommands) do
-                table.insert(completions, name)
+                if name:lower():find(args[1]:lower(), 1, true) then
+                    table.insert(completions, name)
+                end
             end
         elseif #args > 1 then
             local subcommand = subcommands[args[1]]

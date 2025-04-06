@@ -13,7 +13,6 @@ end
 ---@class ScriptManager
 ---@field scripts table<string, boolean> Table of loaded scripts
 ---@field environments table<string, table> Table of script environments
----@field sharedObjects table<string, any> Table of shared objects available to all scripts
 ScriptManager = {}
 
 
@@ -140,10 +139,6 @@ function ScriptManager.createSandbox(scriptName)
         __index = function(t, k)
             -- Check script's own globals first
             local v = rawget(t, k)
-            if v ~= nil then return v end
-
-            -- Then check shared objects
-            v = ScriptManager.sharedObjects[k]
             if v ~= nil then return v end
 
             -- Then check shared environment
@@ -286,13 +281,6 @@ function ScriptManager.getLoadedScripts()
     return result
 end
 
---- Register a shared object (available to all scripts)
----@param name string The name to expose the object as
----@param object any The object to share
-function ScriptManager.registerSharedObject(name, object)
-    ScriptManager.sharedObjects[name] = object
-end
-
 --- Get a variable from a script's environment, supporting class instances and nested tables
 --- Used for getting variables from scripts from the Java side
 ---@param scriptName string The name of the script
@@ -356,7 +344,6 @@ end
 ScriptManager.scripts = {}
 ScriptManager.environments = {}
 ScriptManager.cleanupHandlers = {}
-ScriptManager.sharedObjects = {}
 
 
 -- Return the ScriptManager table

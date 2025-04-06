@@ -65,8 +65,7 @@ function Script.new(name, server, plugin, logger)
         end
         self.listeners = {}
         for commandName, commandData in pairs(self.commands) do
-
-            local cmd = server:getCommandMap():getCommand(commandData.metadata.name)
+            local cmd = server:getCommandMap():getCommand(string.lower(commandData.metadata.name))
             if cmd then
                 local success, err = cmd:unregister(server:getCommandMap())
                 if not success then
@@ -74,27 +73,28 @@ function Script.new(name, server, plugin, logger)
                     return
                 end
             end
+            
             local success, err = server:getCommandMap():getKnownCommands():remove(cmd:getLabel())
             if not success then
                 logger:warning("Error unregistering command " .. commandData.metadata.name .. ": " .. tostring(err))
                 return
             end
 
-
-            -- Loop through the aliases
-            for _, alias in ipairs(commandData.metadata.aliases) do
-                local success, err = server:getCommandMap():getKnownCommands():remove(alias)
-                
-                if not success then
-                    logger:warning("Error unregistering alias " .. alias .. ": " .. tostring(err))
-                    return
+            -- Loop through the aliases if the table exists and is not empty
+            if commandData.metadata.aliases and type(commandData.metadata.aliases) == "table" and #commandData.metadata.aliases > 0 then
+                for _, alias in ipairs(commandData.metadata.aliases) do
+                    local success, err = server:getCommandMap():getKnownCommands():remove(alias)
+                    
+                    if not success then
+                        logger:warning("Error unregistering alias " .. alias .. ": " .. tostring(err))
+                        return
+                    end
                 end
             end
 
-            __syncCommands() -- Calls Java to sync the commands to the server since it needs reflection to call and we can't do that in Lua it seems
-
             self.commands[commandName] = nil
         end
+        __syncCommands() -- Calls Java to sync the commands to the server since it needs reflection to call and we can't do that in Lua it seems
     end)
 
     return self

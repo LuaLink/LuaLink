@@ -2,7 +2,6 @@ package win.templeos.lualink
 
 import org.bukkit.plugin.java.JavaPlugin
 import win.templeos.lualink.lua.LuaManager
-import win.templeos.lualink.lua.TestClass
 
 class LuaLink : JavaPlugin() {
     private val luaManager = LuaManager(this)

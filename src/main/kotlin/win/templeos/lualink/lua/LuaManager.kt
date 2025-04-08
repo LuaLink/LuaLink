@@ -135,10 +135,6 @@ class LuaManager(private val plugin: LuaLink) {
         this.createScriptFromString(luaLinkCode, "LuaLink")
     }
 
-    fun getTestClass(): TestClass{
-        return TestClassImpl()
-    }
-
 
     /**
      * Loads a resource file as a string

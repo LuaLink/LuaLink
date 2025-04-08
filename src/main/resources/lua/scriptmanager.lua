@@ -162,9 +162,12 @@ function ScriptManager.createSandbox(scriptName)
         sandbox.logger:info(message)
     end
 
-    local script = Script.new(scriptName, server, __plugin, sandbox.logger)
+    local script = Script.new(scriptName, server, __plugin, sandbox.logger, debug)
 
     sandbox.script = script
+
+    local scheduler = Scheduler.new(__plugin, script)
+    sandbox.scheduler = scheduler
 
     -- Store the environment
     ScriptManager.environments[scriptName] = sandbox

@@ -23,6 +23,7 @@ class LuaManager(private val plugin: LuaLink) {
         private const val LUA_SCRIPT_MANAGER_PATH = "/lua/scriptmanager.lua"
         private const val LUA_SCRIPT_CLASS_PATH = "/lua/script.lua"
         private const val LUA_SCRIPT_PATH = "/lua/lualink.lua"
+        private const val LUA_SCRIPT_SCHEDULER_PATH = "/lua/scheduler.lua"
     }
 
     /**
@@ -35,6 +36,7 @@ class LuaManager(private val plugin: LuaLink) {
         lua.openLibrary("os")
         lua.openLibrary("io")
         lua.openLibrary("package")
+        lua.openLibrary("debug")
 
         lua.pushJavaObject(Bukkit.getServer())
         lua.setGlobal("server")
@@ -112,11 +114,15 @@ class LuaManager(private val plugin: LuaLink) {
             return@JFunction 0
         })
         lua.setGlobal("__syncCommands")
-
         // Load the script class
         val scriptCode = loadResourceAsStringByteBuffer(LUA_SCRIPT_CLASS_PATH)
         lua.load(scriptCode, "script.lua")
         lua.pCall(0, 0)
+
+        val schedulerCode = loadResourceAsStringByteBuffer(LUA_SCRIPT_SCHEDULER_PATH)
+        lua.load(schedulerCode, "scheduler.lua")
+        lua.pCall(0, 0)
+
         // Load the script manager implementation from resources
         val scriptManagerCode = loadResourceAsStringByteBuffer(LUA_SCRIPT_MANAGER_PATH)
         lua.load(scriptManagerCode, "scriptmanager.lua")
@@ -127,6 +133,10 @@ class LuaManager(private val plugin: LuaLink) {
         // Load the LuaLink internal script
         val luaLinkCode = loadResourceAsString(LUA_SCRIPT_PATH)
         this.createScriptFromString(luaLinkCode, "LuaLink")
+    }
+
+    fun getTestClass(): TestClass{
+        return TestClassImpl()
     }
 
 

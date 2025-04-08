@@ -18,7 +18,7 @@ Script = {}
 ---@param plugin Plugin The plugin instance
 ---@param logger Logger The logger instance
 ---@return Script
-function Script.new(name, server, plugin, logger)
+function Script.new(name, server, plugin, logger, debug)
     local self = setmetatable({}, {__index = Script})
     self.name = name
     self.commands = {}
@@ -44,9 +44,16 @@ function Script.new(name, server, plugin, logger)
             for _, handler in ipairs(eventHandlers) do
                 local eventExecutor = {}
                 function eventExecutor:execute(listener, event)
-                    local success, err = pcall(handler, event)
+                    local function errorHandler(err)
+                        return debug.traceback(tostring(err), 2)
+                    end
+                
+                    local success, err = xpcall(function()
+                        handler(event)
+                    end, errorHandler)
+                
                     if not success then
-                        logger:warning("Error in event handler for " .. eventName .. ": " .. tostring(err))
+                        logger:warning("Error in event handler for " .. eventName .. ": " .. err)
                     end
                 end
 

@@ -11,6 +11,7 @@ group = "win.templeos.lualink"
 version = "1.0-SNAPSHOT"
 
 repositories {
+    mavenLocal()
     mavenCentral()
     maven("https://repo.purpurmc.org/snapshots")
 }
@@ -22,7 +23,7 @@ dependencies {
     library(kotlin("stdlib"))
     api(kotlin("stdlib"))
     compileOnly("org.purpurmc.purpur:purpur-api:1.21-R0.1-SNAPSHOT")
-    implementation("party.iroiro.luajava:luajava:$luaJavaVersion")
+    implementation("party.iroiro.luajava:luajava:4.0.3-SNAPSHOT")
     implementation("party.iroiro.luajava:luajit:$luaJavaVersion")
     runtimeOnly("party.iroiro.luajava:luajit-platform:$luaJavaVersion:natives-desktop")
 }

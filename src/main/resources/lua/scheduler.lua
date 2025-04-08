@@ -16,7 +16,7 @@ function Scheduler.new(plugin, script)
     self.script:onUnload(function()
         -- Unregister all tasks when the script is unloaded
         for _, task in ipairs(self.tasks) do
-            task:cancel()
+            self:cancel(task)
         end
     end)
     return self
@@ -59,10 +59,10 @@ end
 ---@return Task The scheduled task
 function Scheduler:run(handler)
     self.script.logger:info("Scheduling task: " .. tostring(handler))
-    local task, err = pcall(function()
+    local success, task = pcall(function()
         return server:getScheduler():runTask(self.plugin, self:_wrapHandlerAsRunnable(handler))
     end)
-    if not task then
+    if not success then
         self.script.logger:warning("Error scheduling task: " .. err)
         return nil
     end
@@ -73,10 +73,10 @@ end
 ---@param task function The task to run
 ---@return Task The scheduled task
 function Scheduler:runAsync(handler)
-    local task, err = pcall(function()
+    local success, task = pcall(function()
         return server:getScheduler():runTaskAsynchronously(self.plugin, self:_wrapHandlerAsRunnable(handler))
     end)
-    if not task then
+    if not success then
         self.script.logger:warning("Error scheduling async task: " .. err)
         return nil
     end
@@ -88,15 +88,15 @@ end
 ---@param delay number The delay in ticks
 ---@return Task The scheduled task
 function Scheduler:runLater(handler, delay)
-    local task, err = pcall(function()
+    local success, task = pcall(function()
         return server:getScheduler():runTaskLater(self.plugin, self:_wrapHandlerAsRunnable(handler), delay)
     end)
-    if not task then
+    if not success then
         self.script.logger:warning("Error scheduling later task: " .. err)
         return nil
     end
 
-    table.insert(self.tasks, task)
+    table.insert(self.tasks, task:getTaskId())
     return task
 end
 
@@ -105,15 +105,15 @@ end
 ---@param delay number The delay in ticks
 ---@return Task The scheduled task
 function Scheduler:runLaterAsync(handler, delay)
-    local task, err = pcall(function()
+    local success, task = pcall(function()
         return server:getScheduler():runTaskLaterAsynchronously(self.plugin, self:_wrapHandlerAsRunnable(handler), delay)
     end)
-    if not task then
+    if not success then
         self.script.logger:warning("Error scheduling later async task: " .. err)
         return nil
     end
 
-    table.insert(self.tasks, task)
+    table.insert(self.tasks, task:getTaskId())
     return task
 end
 
@@ -123,15 +123,15 @@ end
 ---@param period number The period in ticks between subsequent executions
 ---@return Task The scheduled task
 function Scheduler:runRepeating(handler, delay, period)
-    local task, err = pcall(function()
+    local success, task = pcall(function()
         return server:getScheduler():runTaskTimer(self.plugin, self:_wrapHandlerAsRunnable(handler), delay, period)
     end)
-    if not task then
+    if not success then
         self.script.logger:warning("Error scheduling repeating task: " .. err)
         return nil
     end
 
-    table.insert(self.tasks, task)
+    table.insert(self.tasks, task:getTaskId())
     return task
 end
 
@@ -141,23 +141,23 @@ end
 ---@param period number The period in ticks between subsequent executions
 ---@return Task The scheduled task
 function Scheduler:runRepeatingAsync(handler, delay, period)
-    local task, err = pcall(function()
+    local success, task = pcall(function()
         return server:getScheduler():runTaskTimerAsynchronously(self.plugin, self:_wrapHandlerAsRunnable(handler), delay, period)
     end)
-    if not task then
+    if not success then
         self.script.logger:warning("Error scheduling repeating async task: " .. err)
         return nil
     end
 
-    table.insert(self.tasks, task)
+    table.insert(self.tasks, task:getTaskId())
     return task
 end
 
 --- Cancel a scheduled task
----@param task Task The task to cancel
-function Scheduler:cancel(handler)
-    if task and type(handler) == "number" then
-        server:getScheduler():cancelTask(handler)
+---@param task Task|number The task to cancel
+function Scheduler:cancel(task)
+    if task and type(task) == "number" then
+        server:getScheduler():cancelTask(task)
     else 
         task:cancel()
     end

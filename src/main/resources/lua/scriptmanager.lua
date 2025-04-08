@@ -120,8 +120,8 @@ local sharedEnv = {
     
 
     -- LuaLink internal
-    __registerCommand = __registerCommand,
     server = server,
+    import = java.import, -- Simple alias for java.import
 }
 
 --- Create a sandbox environment for a script

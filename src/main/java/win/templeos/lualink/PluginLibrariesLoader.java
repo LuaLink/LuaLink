@@ -11,15 +11,10 @@ import com.google.gson.JsonPrimitive;
 import io.papermc.paper.plugin.loader.PluginClasspathBuilder;
 import io.papermc.paper.plugin.loader.PluginLoader;
 import io.papermc.paper.plugin.loader.library.impl.MavenLibraryResolver;
-import org.apache.maven.model.Repository;
 import org.eclipse.aether.artifact.DefaultArtifact;
 import org.eclipse.aether.graph.Dependency;
-import org.eclipse.aether.repository.Authentication;
 import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.util.repository.AuthenticationBuilder;
-
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -32,6 +27,9 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.List;
 import java.util.Map;
+
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Responsible for downloading and loading internal and user-specified libraries.
@@ -48,6 +46,8 @@ public final class PluginLibrariesLoader implements PluginLoader {
     public void classloader(final @NotNull PluginClasspathBuilder classpathBuilder) {
         // Loading internal libraries.
         try (final InputStream stream = this.getClass().getClassLoader().getResourceAsStream("paper-libraries.json")) {
+            if (stream == null)
+                throw new IOException("File 'paper-libraries.json' not found in the classpath.");
             // Extracting file contents to new MavenLibraryResolver instance.
             final MavenLibraryResolver iLibraries = gson.fromJson(new InputStreamReader(stream, StandardCharsets.UTF_8), PluginLibraries.class)
                     .toMavenLibraryResolver();
@@ -56,21 +56,34 @@ public final class PluginLibrariesLoader implements PluginLoader {
         } catch (final IOException e) {
             throw new RuntimeException(e);
         }
-/*
-        final File eLibrariesFile = new File(classpathBuilder.getContext().getDataDirectory().toFile(), "libraries.json");
 
-        // Loading external (user-specified) libraries.
-        try {
-            // Extracting file contents to new MavenLibraryResolver instance.
-            final MavenLibraryResolver eDependencies = gson.fromJson(new InputStreamReader(new FileInputStream(eLibrariesFile), StandardCharsets.UTF_8), PluginLibraries.class)
-                    .toMavenLibraryResolver();
-            // Adding library(-ies) to the PluginClasspathBuilder.
-            classpathBuilder.addLibrary(eDependencies);
-        } catch (final FileNotFoundException e) {
-            throw new RuntimeException(e);
+        // Saving the default 'libraries.json' file to the plugin's directory.
+        final File eLibrariesFile = new File(classpathBuilder.getContext().getDataDirectory().toFile(), "libraries.json");
+        if (eLibrariesFile.exists() == false) {
+            try (final InputStream stream = this.getClass().getClassLoader().getResourceAsStream("libraries.json")) {
+                if (stream == null)
+                    throw new IOException("File 'libraries.json' not found in the classpath.");
+                // Creating directories...
+                classpathBuilder.getContext().getDataDirectory().toFile().mkdirs();
+                // Copying the file to the plugin's directory. Existing file should not be overridden
+                Files.copy(stream, eLibrariesFile.toPath());
+            } catch (final IOException e) {
+                throw new RuntimeException(e);
+            }
         }
 
-*/
+        // Loading external (user-specified) libraries from the 'libraries.json' file.
+        if (eLibrariesFile.exists() == true) {
+            try {
+                // Extracting file contents to new MavenLibraryResolver instance.
+                final MavenLibraryResolver eDependencies = gson.fromJson(new InputStreamReader(new FileInputStream(eLibrariesFile), StandardCharsets.UTF_8), PluginLibraries.class)
+                        .toMavenLibraryResolver();
+                // Adding library(-ies) to the PluginClasspathBuilder.
+                classpathBuilder.addLibrary(eDependencies);
+            } catch (final FileNotFoundException e) {
+                throw new RuntimeException(e);
+            }
+        }
     }
 
     private record PluginLibraries(Map<String, RepositoryInfo> repositories, List<String> dependencies) {
@@ -118,9 +131,8 @@ public final class PluginLibrariesLoader implements PluginLoader {
      * }
      * }</pre>
      */
-    private static final class RepositoryInfoDeserializer implements JsonDeserializer<RepositoryInfo> {
-        // Singleton instance.
-        public static final RepositoryInfoDeserializer INSTANCE = new RepositoryInfoDeserializer();
+    private enum RepositoryInfoDeserializer implements JsonDeserializer<RepositoryInfo> {
+        INSTANCE; // SINGLETON
 
         @Override
         public RepositoryInfo deserialize(final @NotNull JsonElement element, final @NotNull Type type, final @NotNull JsonDeserializationContext context) throws JsonParseException {

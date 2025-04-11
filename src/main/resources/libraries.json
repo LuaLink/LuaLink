@@ -1,0 +1,9 @@
+// External libraries to be loaded for use with scripts. Server must be restarted for the changes to take effect.
+{
+  "repositories": {
+    // "RepositoryName": "https://repo.example.com/releases"
+  },
+  "dependencies": [
+    // "com.example:library-api:1.0"
+  ]
+}

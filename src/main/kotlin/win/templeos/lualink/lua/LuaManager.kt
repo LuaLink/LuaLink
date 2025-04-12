@@ -1,9 +1,11 @@
 package win.templeos.lualink.lua
 
 import org.bukkit.Bukkit
+import org.bukkit.scheduler.BukkitRunnable
 import party.iroiro.luajava.JFunction
 import party.iroiro.luajava.Lua
 import party.iroiro.luajava.luajit.LuaJit
+import party.iroiro.luajava.luajit.LuaJitConsts
 import party.iroiro.luajava.value.LuaValue
 import win.templeos.lualink.LuaLink
 import java.io.BufferedReader
@@ -114,6 +116,63 @@ class LuaManager(private val plugin: LuaLink) {
             return@JFunction 0
         })
         lua.setGlobal("__syncCommands")
+
+        lua.push(JFunction { it ->
+            // The first argument is a Lua function
+            if (!it.isFunction(-1)) {
+                it.error("Expected a function as the first argument")
+                return@JFunction 0
+            }
+
+            // Create a reference to the function at stack position 1
+            it.pushValue(-1) // Duplicate the function on the stack
+            val ref = it.ref() // Store in registry and get reference
+
+            val runnable: BukkitRunnable = object : BukkitRunnable() {
+                override fun run() {
+                    // Get the Lua function from the registry using the reference
+                    it.rawGetI(LuaJitConsts.LUA_REGISTRYINDEX, ref)
+
+                    // Push this runnable as the first argument
+                    it.pushJavaObject(this)
+
+                    // Call the function with pcall (1 arg, 0 returns)
+                    it.pCall(1, 0)
+                }
+
+                // Clean up the reference when the runnable is cancelled/finished
+                override fun cancel() {
+                    super.cancel()
+                    it.unref(ref)
+                    plugin.logger.info("Runnable cancelled and reference cleaned up")
+                }
+            }
+
+            // Push the runnable as the return value
+            it.pushJavaObject(runnable)
+
+            // Push the reference as the second return value
+            it.push(ref)
+
+            return@JFunction 2
+        })
+        lua.setGlobal("__createRunnable")
+
+        // Create a function to unref stuff. Mainly used to ensure references to tasks are cleaned up
+        lua.push(JFunction { it ->
+            // The first argument is a reference to unref
+            if (!it.isNumber(-1)) {
+                it.error("Expected a number as the first argument")
+                return@JFunction 0
+            }
+
+            // Unref the reference
+            val ref = it.toNumber(-1)
+            it.unref(ref.toInt())
+            return@JFunction 0
+        })
+        lua.setGlobal("__unref")
+
         // Load the script class
         val scriptCode = loadResourceAsStringByteBuffer(LUA_SCRIPT_CLASS_PATH)
         lua.load(scriptCode, "script.lua")
@@ -179,7 +238,7 @@ class LuaManager(private val plugin: LuaLink) {
      * @param scriptName Unique name for the script
      * @return A Script object representing the loaded script
      */
-    private fun createScriptFromString(scriptCode: String, scriptName: String){
+    private fun createScriptFromString(scriptCode: String, scriptName: String) {
         scriptManagerTable!!.get("loadScriptFromString").call(scriptCode, scriptName)
     }
 

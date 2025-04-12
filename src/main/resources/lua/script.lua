@@ -176,7 +176,7 @@ end
 -- Register a hook for a server event
 ---@param event string Event name
 ---@param handler function Function to handle the event
-function Script:registerEvent(event, handler)
+function Script:registerListener(event, handler)
     if type(event) ~= "string" then
         error("Event name must be a string")
     end

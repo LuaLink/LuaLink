@@ -111,7 +111,7 @@ end
 ---@param task function The task to run
 ---@param delay number The delay in ticks
 ---@return Task The scheduled task
-function Scheduler:runLater(handler, delay)
+function Scheduler:runDelayed(handler, delay)
     local luaRef = nil
     local success, task = pcall(function()
         local runnable, ref = __createRunnable(handler)
@@ -119,7 +119,7 @@ function Scheduler:runLater(handler, delay)
         return runnable:runTaskLater(self.plugin, delay)
     end)
     if not success then
-        self.script.logger:warning("Error scheduling later task: " .. err)
+        self.script.logger:warning("Error scheduling delayed task: " .. err)
         return nil
     end
 
@@ -131,7 +131,7 @@ end
 ---@param task function The task to run
 ---@param delay number The delay in ticks
 ---@return Task The scheduled task
-function Scheduler:runLaterAsync(handler, delay)
+function Scheduler:runDelayedAsync(handler, delay)
     local luaRef = nil
     local success, task = pcall(function()
         local runnable, ref = __createRunnable(handler)
@@ -139,7 +139,7 @@ function Scheduler:runLaterAsync(handler, delay)
         return runnable:runTaskLaterAsynchronously(self.plugin, delay)
     end)
     if not success then
-        self.script.logger:warning("Error scheduling later async task: " .. err)
+        self.script.logger:warning("Error scheduling delayed async task: " .. err)
         return nil
     end
 

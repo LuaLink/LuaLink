@@ -48,38 +48,38 @@ class LuaManager(private val plugin: LuaLink) {
         lua.push(JFunction {
             // Possibly a bad solution? Possibly not?
             if (!it.isString(1)) {
-                plugin.logger.info("Script name is null")
+                it.error("Script name is null")
                 return@JFunction 0
             }
             if (!it.isString(2)) {
-                plugin.logger.info("Command name is null")
+                it.error("Command name is null")
                 return@JFunction 0
             }
 
             val scriptName: String? = it.toString(1)
             val commandName: String? = it.toString(2)
             if (scriptName == null) {
-                plugin.logger.info("Script name is null")
+                it.error("Script name is null")
                 return@JFunction 0
             }
 
             if (commandName == null) {
-                plugin.logger.info("Command name is null")
+                it.error("Command name is null")
                 return@JFunction 0
             }
             if (scriptManagerTable == null) {
-                plugin.logger.severe("ScriptManager table is null")
+                it.error("ScriptManager table is null")
                 return@JFunction 0
             }
             val commands = scriptManagerTable!!.get("getVariable").call(scriptName, "script.commands")[0]
             if (commands?.size == 0) {
-                plugin.logger.severe("Commands table is null")
+                it.error("Commands table is null")
                 return@JFunction 0
             }
 
             val commandData = commands?.get(commandName)
             if (commandData == null) {
-                plugin.logger.severe("Command data is null")
+                it.error("Command data is null")
                 return@JFunction 0
             }
             val command = LuaCommand(commandData!!)

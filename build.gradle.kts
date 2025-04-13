@@ -59,7 +59,7 @@ modrinth {
     versionNumber.set(version.toString())
     versionType.set("release")
     uploadFile.set(tasks.shadowJar.get())
-    gameVersions.addAll("1.21.4")
+    gameVersions.addAll("1.21.4", "1.21.5")
     loaders.addAll("paper", "purpur")
     changelog.set(System.getenv("GIT_COMMIT_MESSAGE"))
 }
@@ -76,7 +76,7 @@ hangarPublish {
         platforms {
             register(Platforms.PAPER) {
                 jar.set(tasks.shadowJar.flatMap { it.archiveFile })
-                platformVersions.set(listOf("1.20.1", "1.20.2", "1.20.3", "1.20.4", "1.21.4"))
+                platformVersions.set(listOf("1.21.4", "1.21.5"))
             }
         }
     }

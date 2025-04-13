@@ -13,6 +13,9 @@ local subcommands = {
             else
                 sender:sendRichMessage("<green>Loaded scripts:")
                 for _, scriptName in ipairs(loadedScripts) do
+                    if scriptName ~= "LuaLink" then
+                        return
+                    end
                     sender:sendRichMessage(" - <yellow>" .. scriptName)
                 end
             end
@@ -28,6 +31,10 @@ local subcommands = {
                 return
             end
             local scriptName = args[2]
+            if scriptName == "LuaLink" then
+                sender:sendRichMessage("<red>Cannot unload the internal LuaLink script")
+                return
+            end
             local success, err = ScriptManager.unloadScript(scriptName)
             if success then
                 sender:sendRichMessage("<green>Script unloaded: " .. scriptName)
@@ -40,7 +47,7 @@ local subcommands = {
             if #args == 2 then
                 local loadedScripts = ScriptManager.getLoadedScripts()
                 for _, scriptName in ipairs(loadedScripts) do
-                    if scriptName:lower():find(args[2]:lower(), 1, true) then
+                    if scriptName ~= "LuaLink" and scriptName:lower():find(args[2]:lower(), 1, true) then
                         table.insert(completions, scriptName)
                     end
                 end
@@ -58,6 +65,10 @@ local subcommands = {
                 return
             end
             local scriptName = args[2]
+            if scriptName == "LuaLink" then
+                sender:sendRichMessage("<red>Cannot load the internal LuaLink script")
+                return
+            end
             -- Check if the script is already loaded
             local loadedScripts = ScriptManager.getLoadedScripts()
             for _, loadedScript in ipairs(loadedScripts) do
@@ -87,7 +98,7 @@ local subcommands = {
                             break
                         end
                     end
-                    if not alreadyLoaded and scriptName:lower():find(args[2]:lower(), 1, true) then
+                    if scriptName ~= "LuaLink" and not alreadyLoaded and scriptName:lower():find(args[2]:lower(), 1, true) then
                         table.insert(completions, scriptName)
                     end
                 end
@@ -105,6 +116,11 @@ local subcommands = {
                 return
             end
             local scriptName = args[2]
+            if scriptName == "LuaLink" then
+                sender:sendRichMessage("<red>Cannot reload the internal LuaLink script")
+                return
+            end
+
             local success, err = ScriptManager.unloadScript(scriptName)
             if not success then
                 sender:sendRichMessage("<red>Error unloading script: " .. err)
@@ -122,7 +138,7 @@ local subcommands = {
             if #args == 2 then
                 local loadedScripts = ScriptManager.getLoadedScripts()
                 for _, scriptName in ipairs(loadedScripts) do
-                    if scriptName:lower():find(args[2]:lower(), 1, true) then
+                    if scriptName ~= "LuaLink" and scriptName:lower():find(args[2]:lower(), 1, true) then
                         table.insert(completions, scriptName)
                     end
                 end

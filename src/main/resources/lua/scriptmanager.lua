@@ -115,7 +115,6 @@ local sharedEnv = {
     tostring = tostring,
     tonumber = tonumber,
     select = select,
-    unpack = unpack,
     next = next,
     
 

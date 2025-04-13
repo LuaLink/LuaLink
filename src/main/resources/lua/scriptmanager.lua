@@ -150,18 +150,19 @@ function ScriptManager.createSandbox(scriptName)
 
     setmetatable(sandbox, mt)
 
+    local logger = Logger:getLogger("LuaLink/" .. scriptName)
+
     -- Add script-specific fields
     sandbox._NAME = scriptName
     sandbox._SCRIPT = scriptName
-    sandbox.logger = Logger:getLogger("LuaLink/"..scriptName)
     sandbox.print = function(...)
-        local args = {...}
+        local args = { ... }
         local message = table.concat(args, " ")
 
-        sandbox.logger:info(message)
+        logger:info(message)
     end
 
-    local script = Script.new(scriptName, server, __plugin, sandbox.logger, debug)
+    local script = Script.new(scriptName, server, __plugin, logger, debug)
 
     sandbox.script = script
 

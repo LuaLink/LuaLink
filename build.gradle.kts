@@ -12,7 +12,7 @@ plugins {
 val buildNum = System.getenv("GITHUB_RUN_NUMBER") ?: "SNAPSHOT"
 
 group = "win.templeos.lualink"
-version = "1.21.4-$buildNum"
+version = "1.21.5-$buildNum"
 
 repositories {
     mavenLocal()

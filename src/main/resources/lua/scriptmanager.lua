@@ -5,7 +5,7 @@ local MiniMessage = java.import("net.kyori.adventure.text.minimessage.MiniMessag
 local ScriptManagerLogger = Logger:getLogger("LuaLink/ScriptManager")
 
 local function print(...)
-    local args = {...}
+    local args = { ... }
     local message = table.concat(args, " ")
     ScriptManagerLogger:info(message)
 end
@@ -89,6 +89,63 @@ local function copyTable(t, visited)
     return result
 end
 
+--- Load and execute the init.lua file (optional)
+---@param scriptName string Name of the script
+---@param initPath string Path to the init.lua file
+---@return table|nil metadata Metadata returned by init.lua or nil if the file doesn't exist
+local function loadInitFile(scriptName, initPath)
+    local file = io.open(initPath, "r")
+    if not file then
+        return nil -- init.lua is optional
+    end
+    file:close()
+
+    local initEnv = {}
+    setmetatable(initEnv, { __index = function() return nil end }) -- Empty environment
+    local initFunc, initErr = loadfile(initPath, "t", initEnv)
+    if not initFunc then
+        error("Failed to load init.lua for script " .. scriptName .. ": " .. tostring(initErr))
+    end
+
+    local success, metadata = pcall(initFunc)
+    if not success then
+        error("Error running init.lua for script " .. scriptName .. ": " .. tostring(metadata))
+    end
+
+    if type(metadata) ~= "table" then
+        error("init.lua for script " .. scriptName .. " must return a table")
+    end
+
+    return metadata
+end
+
+--- Check if all dependencies are loaded
+---@param scriptName string Name of the script
+---@param dependencies table List of dependencies
+local function checkDependencies(scriptName, dependencies)
+    for _, dependency in ipairs(dependencies) do
+        if server:getPluginManager():getPlugin(dependency) == nil then
+            error("Dependency " .. dependency .. " for script " .. scriptName .. " is missing")
+        end
+    end
+end
+
+--- Load and execute the main.lua file
+---@param scriptName string Name of the script
+---@param mainPath string Path to the main.lua file
+local function loadMainFile(scriptName, mainPath)
+    local f, err = loadfile(mainPath, "t", ScriptManager.createSandbox(scriptName))
+    if not f then
+        error("Failed to load main.lua for script " .. scriptName .. ": " .. tostring(err))
+    end
+
+    local success, result = pcall(f)
+    if not success then
+        ScriptManager.environments[scriptName] = nil
+        error("Error running main.lua for script " .. scriptName .. ": " .. tostring(result))
+    end
+end
+
 --- Create a shared environment for all scripts
 ---@class SharedEnvironment
 ---@field string table Read-only string library
@@ -103,7 +160,6 @@ local sharedEnv = {
     math = makeReadOnly(copyTable(math)),
     os = makeReadOnly(copyTable(os)),
     io = makeReadOnly(copyTable(io)),
-    package = makeReadOnly(copyTable(package)),
     java = makeReadOnly(copyTable(java)),
     -- Expose standard Lua functions
     pcall = pcall,
@@ -116,7 +172,6 @@ local sharedEnv = {
     tonumber = tonumber,
     select = select,
     next = next,
-    
 
     -- LuaLink internal
     server = server,
@@ -176,33 +231,34 @@ function ScriptManager.createSandbox(scriptName)
 end
 
 --- Load a script from a file
----@param scriptPath string Path to the script file
 ---@param scriptName string Name for the script
 ---@return boolean success Whether the script was loaded successfully
 function ScriptManager.loadScript(scriptName)
-    local f, err = loadfile(__plugin:getDataFolder():getAbsolutePath() .. "/scripts/" .. scriptName .. "/main.lua", "t", ScriptManager.createSandbox(scriptName))
-    if not f then
-        error("Failed to load script " .. scriptName .. ": " .. tostring(err))
+    local scriptFolder = __plugin:getDataFolder():getAbsolutePath() .. "/scripts/" .. scriptName
+    local initPath = scriptFolder .. "/init.lua"
+    local mainPath = scriptFolder .. "/main.lua"
+
+    -- Load init.lua and get metadata
+    local metadata = loadInitFile(scriptName, initPath)
+
+    -- Check dependencies
+    if metadata and metadata.dependencies then
+        checkDependencies(scriptName, metadata.dependencies)
     end
 
-    -- Run the script and store its environment
-    local success, result = pcall(f)
-    if not success then
-        -- Clean up the environment if script fails
-        ScriptManager.environments[scriptName] = nil
-        error("Error running script " .. scriptName .. ": " .. tostring(result))
-    end
+    -- Load main.lua
+    loadMainFile(scriptName, mainPath)
 
-    -- Store the script's environment
     ScriptManager.scripts[scriptName] = true
     local script = ScriptManager.environments[scriptName].script
+    script.metadata = metadata -- Let scripts access their metadata
     script:_callLoadHandlers()
 
     return true
 end
 
 --- Load a script from a string
---- Unused at the moment but gonna keep it incase we add a /lualink run command
+--- Only used to load the internal LuaLink script
 ---@param scriptCode string The Lua code
 ---@param scriptName string Name for the script
 ---@return boolean success Whether the script was loaded successfully
@@ -290,7 +346,6 @@ end
 ---@param variablePath string The path to the variable (e.g. "instance.field" or "table.subtable.value")
 ---@return any value The value of the variable or nil if not found
 function ScriptManager.getVariable(scriptName, variablePath)
-
     if not ScriptManager.scripts[scriptName] then
         return nil
     end

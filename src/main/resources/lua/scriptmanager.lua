@@ -10,6 +10,14 @@ local function print(...)
     ScriptManagerLogger:info(message)
 end
 
+local function error(...)
+    local args = { ... }
+    local message = table.concat(args, " ")
+    ScriptManagerLogger:severe(message)
+    -- Break the script execution
+    error("")
+end
+
 ---@class ScriptManager
 ---@field scripts table<string, boolean> Table of loaded scripts
 ---@field environments table<string, table> Table of script environments
@@ -178,6 +186,48 @@ local sharedEnv = {
     import = java.import, -- Simple alias for java.import
 }
 
+local globalModuleCache = {} -- Global cache for modules in the libs folder
+
+local function getCustomRequire(scriptName)
+    return function(moduleName)
+        if ScriptManager.environments[scriptName]["_moduleCache"][moduleName] then
+            return ScriptManager.environments[scriptName]["_moduleCache"][moduleName]
+        end
+
+        -- Define search paths
+        local scriptFolder = __plugin:getDataFolder():getAbsolutePath() .. "/scripts/" .. scriptName
+        local libsFolder = __plugin:getDataFolder():getAbsolutePath() .. "/libs"
+        local searchPaths = {
+            { path = scriptFolder .. "/" .. moduleName:gsub("%.", "/") .. ".lua", cache = ScriptManager.environments[scriptName]["_moduleCache"] },
+            { path = libsFolder .. "/" .. moduleName:gsub("%.", "/") .. ".lua", cache = globalModuleCache }
+        }
+
+        -- Attempt to load the module from the search paths
+        for _, entry in ipairs(searchPaths) do
+            local file = io.open(entry.path, "r")
+            if file then
+                file:close()
+                local chunk, loadErr = loadfile(entry.path, "t", ScriptManager.environments[scriptName]) -- Reuse the script's environment
+                if chunk then
+                    local success, result = pcall(chunk)
+                    if success then
+                        entry.cache[moduleName] = result
+                        return result
+                    else
+                        __plugin:getLogger():warning("Error running module '" .. moduleName .. "' from path '" .. entry.path .. "': " .. tostring(result))
+                    end
+                else
+                    __plugin:getLogger():warning("Failed to load module '" .. moduleName .. "' from path '" .. entry.path .. "': " .. tostring(loadErr))
+                end
+            end
+        end
+
+        -- If no valid module is found, raise an error
+        error("Module '" .. moduleName .. "' not found in any search paths")
+    end
+end
+
+
 --- Create a sandbox environment for a script
 ---@param scriptName string The name of the script
 ---@return table The sandbox environment
@@ -216,6 +266,8 @@ function ScriptManager.createSandbox(scriptName)
 
         logger:info(message)
     end
+    sandbox._moduleCache = {} -- Cache for loaded modules
+    sandbox.require = getCustomRequire(scriptName)
 
     local script = Script.new(scriptName, server, __plugin, logger, debug)
 

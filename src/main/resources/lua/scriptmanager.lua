@@ -10,14 +10,6 @@ local function print(...)
     ScriptManagerLogger:info(message)
 end
 
-local function error(...)
-    local args = { ... }
-    local message = table.concat(args, " ")
-    ScriptManagerLogger:severe(message)
-    -- Break the script execution
-    error("")
-end
-
 ---@class ScriptManager
 ---@field scripts table<string, boolean> Table of loaded scripts
 ---@field environments table<string, table> Table of script environments
@@ -142,6 +134,14 @@ end
 ---@param scriptName string Name of the script
 ---@param mainPath string Path to the main.lua file
 local function loadMainFile(scriptName, mainPath)
+    -- Make sure the file exists before loading
+    local file = io.open(mainPath, "r")
+    if not file then
+        error("main.lua for script " .. scriptName .. " does not exist")
+    end
+    file:close()
+
+    -- Load the main.lua file
     local f, err = loadfile(mainPath, "t", ScriptManager.createSandbox(scriptName))
     if not f then
         error("Failed to load main.lua for script " .. scriptName .. ": " .. tostring(err))

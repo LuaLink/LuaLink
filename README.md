@@ -7,7 +7,26 @@ LuaLink is a plugin that provides a Lua scripting runtime for Paper-based Minecr
 
 The scripting runtime is based on [LuaJava](https://github.com/gudzpoz/luajava) with LuaJIT.
 
-<br />
+## Features
+
+- **High Performance**  
+  LuaLink leverages LuaJava and LuaJIT, which are implemented primarily in C, ensuring fast and efficient execution.  
+
+- **User-Friendly API**  
+  Simplifies scripting with an intuitive and easy-to-use API.  
+
+- **Simple Command Registration**  
+  Register commands effortlessly with a single function. [Learn more](https://lualink.github.io/docs/getting-started/#commands).  
+
+- **Event Listening**  
+  Listen to Bukkit, Spigot, Paper, or even custom plugin events. [Example here](https://lualink.github.io/docs/getting-started/#events).  
+
+- **Script Organization**  
+  Split scripts into multiple files. Each script requires a ```main.lua``` entry point but can load additional files using Lua’s ```require``` function.  
+
+- **Java Library Integration**  
+  Extend LuaLink’s capabilities by using any Java library—whether it’s for a Discord bot, HTTP server, or anything else you can imagine.  
+
 
 ## Requirements
 

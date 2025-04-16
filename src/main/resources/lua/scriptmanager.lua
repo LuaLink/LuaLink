@@ -199,6 +199,7 @@ local function getCustomRequire(scriptName)
         local libsFolder = __plugin:getDataFolder():getAbsolutePath() .. "/libs"
         local searchPaths = {
             { path = scriptFolder .. "/" .. moduleName:gsub("%.", "/") .. ".lua", cache = ScriptManager.environments[scriptName]["_moduleCache"] },
+            { path = libsFolder .. "/" .. moduleName:gsub("%.", "/") .. "/main.lua", cache = globalModuleCache },
             { path = libsFolder .. "/" .. moduleName:gsub("%.", "/") .. ".lua", cache = globalModuleCache }
         }
 

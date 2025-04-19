@@ -38,6 +38,7 @@ dependencies {
     // LuaJava (cannot be easily relocated or downloaded at runtime)
     implementation("party.iroiro.luajava:luajava:4.0.3-SNAPSHOT") // Use our fork of the LuaJava library
     implementation("party.iroiro.luajava:luajit:$luaJavaVersion")
+    implementation("org.bstats:bstats-bukkit:3.0.2")
     // LuaJava natives (cannot be easily relocated or downloaded at runtime)
     runtimeOnly("party.iroiro.luajava:luajit-platform:$luaJavaVersion:natives-desktop")
 }
@@ -88,6 +89,12 @@ tasks {
         // This is the only required configuration besides applying the plugin.
         // Your plugin's jar (or shadowJar if present) will be used automatically.
         minecraftVersion("1.21.4")
+    }
+    shadowJar {
+        archiveBaseName.set("LuaLink")
+        archiveClassifier.set("")
+        archiveVersion.set(version.toString())
+        relocate("org.bstats", "win.templeos.lualink.bstats")
     }
 }
 

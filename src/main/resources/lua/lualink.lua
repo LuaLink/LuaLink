@@ -13,7 +13,7 @@ local subcommands = {
             else
                 sender:sendRichMessage("<green>Loaded scripts:")
                 for _, scriptName in ipairs(loadedScripts) do
-                    if scriptName ~= "LuaLink" then
+                    if scriptName == "LuaLink" then
                         return
                     end
                     sender:sendRichMessage(" - <yellow>" .. scriptName)

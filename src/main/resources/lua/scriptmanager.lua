@@ -180,6 +180,8 @@ local sharedEnv = {
     tonumber = tonumber,
     select = select,
     next = next,
+    getmetatable = getmetatable,
+    setmetatable = setmetatable,
 
     -- LuaLink internal
     server = server,

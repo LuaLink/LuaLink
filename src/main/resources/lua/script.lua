@@ -126,6 +126,7 @@ function Script:onUnload(handler)
 end
 
 -- Internal function to call all load handlers
+---@private
 function Script:_callLoadHandlers()
     local handlers = self.loadHandlers
     for i = 1, #handlers do
@@ -138,6 +139,7 @@ end
 
 
 -- Internal function to call all unload handlers
+---@private
 function Script:_callUnloadHandlers()
     local handlers = self.unloadHandlers
     for i = 1, #handlers do
@@ -148,11 +150,18 @@ function Script:_callUnloadHandlers()
     end
 end
 
+
+---@class LuaLinkCommandMetadata
+---@field name? string The name of the command
+---@field description? string The description of the command
+---@field usage? string The usage of the command
+---@field aliases? string[] The aliases of the command
+---@field permission? string The permission required to use the command
+---@field tabComplete? fun(sender: CommandSender, args: table): string[]|nil Function to handle tab completion
+
 -- Register a command that players can use
----@param name string Command name
----@param description string Command description
----@param usage string Command usage example
----@param handler function Function to handle the command
+---@param handler fun(sender: CommandSender, args: table) Function to handle the command
+---@param metadata LuaLinkCommandMetadata Metadata for the command
 function Script:registerCommand(handler, metadata)
     if type(handler) ~= "function" then
         error("Command handler must be a function")
@@ -175,7 +184,7 @@ end
 
 -- Register a hook for a server event
 ---@param event string Event name
----@param handler function Function to handle the event
+---@param handler fun(event: any) Function to handle the event
 function Script:registerListener(event, handler)
     if type(event) ~= "string" then
         error("Event name must be a string")

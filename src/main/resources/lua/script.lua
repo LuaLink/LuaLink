@@ -158,10 +158,10 @@ end
 ---@field usage? string The usage of the command
 ---@field aliases? string[] The aliases of the command
 ---@field permission? string The permission required to use the command
----@field tabComplete? fun(sender: CommandSender, args: table): string[]|nil Function to handle tab completion
+---@field tabComplete? fun(sender: org.bukkit.command.CommandSender, args: table): string[]|nil Function to handle tab completion
 
 -- Register a command that players can use
----@param handler fun(sender: CommandSender, args: table) Function to handle the command
+---@param handler fun(sender: org.bukkit.command.CommandSender, args: table) Function to handle the command
 ---@param metadata LuaLinkCommandMetadata Metadata for the command
 function Script:registerCommand(handler, metadata)
     if type(handler) ~= "function" then

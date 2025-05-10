@@ -153,7 +153,7 @@ end
 
 
 ---@class LuaLinkCommandMetadata
----@field name? string The name of the command
+---@field name string The name of the command
 ---@field description? string The description of the command
 ---@field usage? string The usage of the command
 ---@field aliases? string[] The aliases of the command

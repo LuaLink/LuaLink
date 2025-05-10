@@ -13,6 +13,7 @@ local HandlerList = java.import("org.bukkit.event.HandlerList")
 Script = {}
 
 -- Create a new script instance
+---@package
 ---@param name string Script name
 ---@param server Server The server instance
 ---@param plugin Plugin The plugin instance

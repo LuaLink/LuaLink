@@ -184,7 +184,7 @@ function Script:registerCommand(handler, metadata)
 end
 
 -- Register a hook for a server event
----@param event string Event name
+---@param event JavaClasses|string Event name
 ---@param handler fun(event: any) Function to handle the event
 function Script:registerListener(event, handler)
     if type(event) ~= "string" then

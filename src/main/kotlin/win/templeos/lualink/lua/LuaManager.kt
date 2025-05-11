@@ -4,10 +4,12 @@ import org.bukkit.Bukkit
 import org.bukkit.scheduler.BukkitRunnable
 import party.iroiro.luajava.JFunction
 import party.iroiro.luajava.Lua
+import party.iroiro.luajava.lua54.Lua54
 import party.iroiro.luajava.luajit.LuaJit
 import party.iroiro.luajava.luajit.LuaJitConsts
 import party.iroiro.luajava.value.LuaValue
 import win.templeos.lualink.LuaLink
+import win.templeos.lualink.config.LuaRuntimes
 import java.io.BufferedReader
 import java.io.IOException
 import java.io.InputStreamReader
@@ -15,9 +17,28 @@ import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets
 import java.util.stream.Collectors
 
-class LuaManager(private val plugin: LuaLink) {
+class LuaManager(private val plugin: LuaLink, luaRuntime: LuaRuntimes) {
     // Create a new Lua state
-    private val lua: Lua = LuaJit()
+    private val lua: Lua = try {
+        when (luaRuntime) {
+            LuaRuntimes.LUAJIT -> {
+                plugin.logger.info("Initializing LuaJIT")
+                LuaJit()
+            }
+            LuaRuntimes.LUA54 -> {
+                plugin.logger.info("Initializing Lua 5.4")
+                Lua54()
+            }
+            else -> {
+                throw UnsupportedOperationException("Configured runtime is not LuaJIT or Lua 5.4")
+            }
+        }
+    } catch (e: UnsatisfiedLinkError) {
+        plugin.logger.warning("LuaJIT failed to load due to missing dependencies (likely libgcc). Falling back to Lua 5.4.")
+        Lua54()
+    } catch (e: UnsupportedOperationException) {
+        Lua54()
+    }
     private var scriptManagerTable: LuaValue? = null
 
     // Path to the Lua script in resources
@@ -131,7 +152,7 @@ class LuaManager(private val plugin: LuaLink) {
             val runnable: BukkitRunnable = object : BukkitRunnable() {
                 override fun run() {
                     // Get the Lua function from the registry using the reference
-                    it.rawGetI(LuaJitConsts.LUA_REGISTRYINDEX, ref)
+                    it.refGet(ref)
 
                     // Push this runnable as the first argument
                     it.pushJavaObject(this)

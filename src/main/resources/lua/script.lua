@@ -4,12 +4,13 @@ local Event = java.import("org.bukkit.event.Event")
 local HandlerList = java.import("org.bukkit.event.HandlerList")
 ---@class Script
 ---@field name string The name of the script
----@field commands table<string, table> Registered commands
----@field hooks table<string, function[]> Event hooks
----@field listeners listener[] List of event listeners instances
----@field logger Logger The logger instance for the script
----@field loadHandlers function[] Functions to call on load
----@field unloadHandlers function[] Functions to call on unload
+---@field package commands table<string, table> Registered commands
+---@field package hooks table<string, function[]> Event hooks
+---@field package listeners listener[] List of event listeners instances
+---@field public logger Logger The logger instance for the script
+---@field package loadHandlers function[] Functions to call on load
+---@field package unloadHandlers function[] Functions to call on unload
+---@field package dataFolder string The data folder for the script
 Script = {}
 
 -- Create a new script instance
@@ -28,6 +29,7 @@ function Script.new(name, server, plugin, logger, debug)
     self.loadHandlers = {}
     self.unloadHandlers = {}
     self.logger = logger
+    self.dataFolder = plugin:getDataFolder():getAbsolutePath() .. "/scripts/" .. name
 
     -- Internal onLoad handler
     self:onLoad(function()
@@ -149,6 +151,12 @@ function Script:_callUnloadHandlers()
             print("Error in unload handler: " .. tostring(err))
         end
     end
+end
+
+--Returns this scripts data folder (where the script is located)
+---@public
+function Script:getDataFolder()
+    return self.dataFolder
 end
 
 

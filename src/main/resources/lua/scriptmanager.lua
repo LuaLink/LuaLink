@@ -279,8 +279,6 @@ function ScriptManager.createSandbox(scriptName)
     local scheduler = Scheduler.new(__plugin, script)
     sandbox.scheduler = scheduler
 
-    sandbox.__dataFolder = __plugin:getDataFolder():getAbsolutePath() .. "/scripts/" .. scriptName
-
     -- Store the environment
     ScriptManager.environments[scriptName] = sandbox
 

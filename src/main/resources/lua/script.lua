@@ -44,7 +44,10 @@ function Script.new(name, server, plugin, logger, debug)
             if not eventClass then
                 error("Event " .. eventClass .. " not found")
             end
-            for _, handler in ipairs(eventHandlers) do
+
+            for _, entry in ipairs(eventHandlers) do
+                local handler = entry.handler
+                local priority = entry.priority or EventPriority.NORMAL
                 local eventExecutor = {}
                 function eventExecutor:execute(listener, event)
                     local function errorHandler(err)
@@ -62,7 +65,7 @@ function Script.new(name, server, plugin, logger, debug)
 
                 local eventProxy = java.proxy("org.bukkit.plugin.EventExecutor", eventExecutor)
                 local listenerProxy = java.proxy("org.bukkit.event.Listener", {})
-                server:getPluginManager():registerEvent(eventClass, listenerProxy, EventPriority.NORMAL, eventProxy, plugin)
+                server:getPluginManager():registerEvent(eventClass, listenerProxy, priority, eventProxy, plugin)
                 table.insert(self.listeners, listenerProxy)
             end
         end
@@ -192,13 +195,20 @@ function Script:registerCommand(handler, metadata)
 end
 
 -- Register a hook for a server event
+---@public
 ---@param event JavaClasses|string Event name
+---@param priority org.bukkit.event.EventPriority Optional event priority
 ---@param handler fun(event: any) Function to handle the event
-function Script:registerListener(event, handler)
+---@overload fun(event: string, handler: fun(event: any))
+---@return nil
+function Script:registerListener(event, priority, handler)
     if type(event) ~= "string" then
         error("Event name must be a string")
     end
-
+    if handler == nil and type(priority) == "function" then
+        handler = priority
+        priority = EventPriority.NORMAL
+    end
     if type(handler) ~= "function" then
         error("Event handler must be a function")
     end
@@ -206,6 +216,5 @@ function Script:registerListener(event, handler)
     if not self.hooks[event] then
         self.hooks[event] = {}
     end
-
-    table.insert(self.hooks[event], handler)
+    table.insert(self.hooks[event], {priority = priority, handler = handler})
 end

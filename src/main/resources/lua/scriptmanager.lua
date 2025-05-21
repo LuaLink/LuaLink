@@ -315,7 +315,7 @@ function ScriptManager.loadScript(scriptName)
         end
         ScriptManager.scripts[scriptName] = nil
         ScriptManager.environments[scriptName] = nil
-        error("Failed to load script '" .. scriptName .. "': " .. tostring(err))
+        error("Failed to load script '" .. scriptName .. "': " .. tostring(err or "Unknown error"))
     end
 
     ScriptManager.scripts[scriptName] = true

@@ -301,8 +301,22 @@ function ScriptManager.loadScript(scriptName)
         checkDependencies(scriptName, metadata.dependencies)
     end
 
-    -- Load main.lua
-    loadMainFile(scriptName, mainPath)
+    local success, err = pcall(function()
+        -- Load main.lua
+        loadMainFile(scriptName, mainPath)
+    end)
+
+    if not success then
+        -- Clean up any partial registrations if script fails to load
+        if ScriptManager.environments[scriptName] and ScriptManager.environments[scriptName].script then
+            pcall(function()
+                ScriptManager.environments[scriptName].script:_callUnloadHandlers()
+            end)
+        end
+        ScriptManager.scripts[scriptName] = nil
+        ScriptManager.environments[scriptName] = nil
+        error("Failed to load script '" .. scriptName .. "': " .. tostring(err))
+    end
 
     ScriptManager.scripts[scriptName] = true
     local script = ScriptManager.environments[scriptName].script

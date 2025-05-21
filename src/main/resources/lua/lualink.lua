@@ -35,11 +35,15 @@ local subcommands = {
                 sender:sendRichMessage("<red>Cannot unload the internal LuaLink script")
                 return
             end
+            if not ScriptManager.isScriptLoaded(scriptName) then
+                sender:sendRichMessage("<red>Script is not loaded: " .. scriptName)
+                return
+            end
             local success, err = ScriptManager.unloadScript(scriptName)
             if success then
                 sender:sendRichMessage("<green>Script unloaded: " .. scriptName)
             else
-                sender:sendRichMessage("<red>Error unloading script: " .. err)
+                sender:sendRichMessage("<red>Error unloading script: " .. (err or "Unknown error"))
             end
         end,
         tabComplete = function(sender, args)
@@ -120,17 +124,20 @@ local subcommands = {
                 sender:sendRichMessage("<red>Cannot reload the internal LuaLink script")
                 return
             end
-
+            if not ScriptManager.isScriptLoaded(scriptName) then
+                sender:sendRichMessage("<red>Script is not loaded: " .. scriptName)
+                return
+            end
             local success, err = ScriptManager.unloadScript(scriptName)
             if not success then
-                sender:sendRichMessage("<red>Error unloading script: " .. err)
+                sender:sendRichMessage("<red>Error unloading script: " .. (err or "Unknown error"))
                 return
             end
             success, err = ScriptManager.loadScript(scriptName)
             if success then
                 sender:sendRichMessage("<green>Script reloaded: " .. scriptName)
             else
-                sender:sendRichMessage("<red>Error reloading script: " .. err)
+                sender:sendRichMessage("<red>Error reloading script: " .. (err or "Unknown error"))
             end
         end,
         tabComplete = function(sender, args)

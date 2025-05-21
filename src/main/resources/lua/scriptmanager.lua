@@ -149,7 +149,6 @@ local function loadMainFile(scriptName, mainPath)
 
     local success, result = pcall(f)
     if not success then
-        ScriptManager.environments[scriptName] = nil
         error("Error running main.lua for script " .. scriptName .. ": " .. tostring(result))
     end
 end

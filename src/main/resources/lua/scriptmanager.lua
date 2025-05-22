@@ -142,15 +142,31 @@ local function loadMainFile(scriptName, mainPath)
     file:close()
 
     -- Load the main.lua file
-    local f, err = loadfile(mainPath, "t", ScriptManager.createSandbox(scriptName))
-    if not f then
-        error("Failed to load main.lua for script " .. scriptName .. ": " .. tostring(err))
-    end
+    local isTeal = mainPath:sub(-3) == ".tl"
+    if not isTeal then
+        local f, err = loadfile(mainPath, "t", ScriptManager.createSandbox(scriptName))
+        if not f then
+            error("Failed to load main.lua for script " .. scriptName .. ": " .. tostring(err))
+        end
 
-    local success, result = pcall(f)
-    if not success then
-        ScriptManager.environments[scriptName] = nil
-        error("Error running main.lua for script " .. scriptName .. ": " .. tostring(result))
+        local success, result = pcall(f)
+        if not success then
+            ScriptManager.environments[scriptName] = nil
+            error("Error running main.lua for script " .. scriptName .. ": " .. tostring(result))
+        end
+    else 
+        -- We can use tl.load which acts like Lua's load() function but for teal files
+        local code = io.open(mainPath, "r"):read("*a")
+        local f, err = tl.load(code, mainPath, "t", ScriptManager.createSandbox(scriptName))
+        if not f then
+            error("Failed to load main.tl for script " .. scriptName .. ": " .. tostring(err))
+        end
+        local success, result = pcall(f)
+        if not success then
+            ScriptManager.environments[scriptName] = nil
+            error("Error running main.tl for script " .. scriptName .. ": " .. tostring(result))
+        end
+        -- Teal files are compiled to Lua, so we need to run the result
     end
 end
 
@@ -196,13 +212,15 @@ local function getCustomRequire(scriptName)
             return ScriptManager.environments[scriptName]["_moduleCache"][moduleName]
         end
 
-        -- Define search paths
         local scriptFolder = __plugin:getDataFolder():getAbsolutePath() .. "/scripts/" .. scriptName
         local libsFolder = __plugin:getDataFolder():getAbsolutePath() .. "/libs"
         local searchPaths = {
-            { path = scriptFolder .. "/" .. moduleName:gsub("%.", "/") .. ".lua", cache = ScriptManager.environments[scriptName]["_moduleCache"] },
-            { path = libsFolder .. "/" .. moduleName:gsub("%.", "/") .. "/main.lua", cache = globalModuleCache },
-            { path = libsFolder .. "/" .. moduleName:gsub("%.", "/") .. ".lua", cache = globalModuleCache }
+            { path = scriptFolder .. "/" .. moduleName:gsub("%.", "/") .. ".lua", cache = ScriptManager.environments[scriptName]["_moduleCache"], isTeal = false },
+            { path = scriptFolder .. "/" .. moduleName:gsub("%.", "/") .. ".tl", cache = ScriptManager.environments[scriptName]["_moduleCache"], isTeal = true },
+            { path = libsFolder .. "/" .. moduleName:gsub("%.", "/") .. "/main.lua", cache = globalModuleCache, isTeal = false },
+            { path = libsFolder .. "/" .. moduleName:gsub("%.", "/") .. "/main.tl", cache = globalModuleCache, isTeal = true },
+            { path = libsFolder .. "/" .. moduleName:gsub("%.", "/") .. ".lua", cache = globalModuleCache, isTeal = false },
+            { path = libsFolder .. "/" .. moduleName:gsub("%.", "/") .. ".tl", cache = globalModuleCache, isTeal = true }
         }
 
         -- Attempt to load the module from the search paths
@@ -210,7 +228,13 @@ local function getCustomRequire(scriptName)
             local file = io.open(entry.path, "r")
             if file then
                 file:close()
-                local chunk, loadErr = loadfile(entry.path, "t", ScriptManager.environments[scriptName]) -- Reuse the script's environment
+                local chunk, loadErr
+                if entry.isTeal then
+                    local code = io.open(entry.path, "r"):read("*a")
+                    chunk, loadErr = tl.load(code, entry.path, "t", ScriptManager.environments[scriptName])
+                else
+                    chunk, loadErr = loadfile(entry.path, "t", ScriptManager.environments[scriptName])
+                end
                 if chunk then
                     local success, result = pcall(chunk)
                     if success then
@@ -291,7 +315,9 @@ end
 function ScriptManager.loadScript(scriptName)
     local scriptFolder = __plugin:getDataFolder():getAbsolutePath() .. "/scripts/" .. scriptName
     local initPath = scriptFolder .. "/init.lua"
-    local mainPath = scriptFolder .. "/main.lua"
+    local mainLuaPath = scriptFolder .. "/main.lua"
+    local mainTealPath = scriptFolder .. "/main.tl"
+    local isTeal = false
 
     -- Load init.lua and get metadata
     local metadata = loadInitFile(scriptName, initPath)
@@ -301,7 +327,21 @@ function ScriptManager.loadScript(scriptName)
         checkDependencies(scriptName, metadata.dependencies)
     end
 
-    -- Load main.lua
+    -- If main.lua doesn't exist, check for main.tl (teal)
+    local mainPath = mainLuaPath
+    local file = io.open(mainLuaPath, "r")
+    if not file then
+        file = io.open(mainTealPath, "r")
+        if file then
+            isTeal = true
+            mainPath = mainTealPath
+        else
+            error("main.lua or main.tl for script " .. scriptName .. " does not exist")
+        end
+    end
+    file:close()
+
+    -- Load main file
     loadMainFile(scriptName, mainPath)
 
     ScriptManager.scripts[scriptName] = true

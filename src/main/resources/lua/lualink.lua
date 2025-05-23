@@ -14,9 +14,12 @@ local subcommands = {
                 sender:sendRichMessage("<green>Loaded scripts:")
                 for _, scriptName in ipairs(loadedScripts) do
                     if scriptName == "LuaLink" then
-                        return
+                        goto continue
                     end
                     sender:sendRichMessage(" - <yellow>" .. scriptName)
+
+                    ::continue::
+                    -- Skips the LuaLink script from being listed
                 end
             end
         end

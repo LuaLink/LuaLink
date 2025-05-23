@@ -36,7 +36,7 @@ dependencies {
     // Paper API
     compileOnly("io.papermc.paper:paper-api:1.20-R0.1-SNAPSHOT")
     // LuaJava (cannot be easily relocated or downloaded at runtime)
-    implementation("party.iroiro.luajava:luajava:4.0.3-SNAPSHOT") // Use our fork of the LuaJava library
+    implementation("party.iroiro.luajava:luajava:$luaJavaVersion") // Use our fork of the LuaJava library
     implementation("party.iroiro.luajava:luajit:$luaJavaVersion")
     implementation("party.iroiro.luajava:lua54:$luaJavaVersion")
     implementation("org.bstats:bstats-bukkit:3.1.0")

@@ -194,21 +194,29 @@ function Script:registerCommand(handler, metadata)
     }
 end
 
--- Register a hook for a server event
+---@alias event_handler fun(event: any)
+
+---Register a hook for a server event
 ---@public
 ---@param event JavaClasses|string Event name
----@param priority org.bukkit.event.EventPriority Optional event priority
----@param handler fun(event: any) Function to handle the event
----@overload fun(event: string, handler: fun(event: any))
+---@param priority_or_handler org.bukkit.event.EventPriority|event_handler Event priority or handler
+---@param handler? event_handler Function to handle the event
 ---@return nil
-function Script:registerListener(event, priority, handler)
+---Register a hook with default priority
+---@overload fun(event: JavaClasses|string, handler: event_handler): nil
+function Script:registerListener(event, priority_or_handler, handler)
     if type(event) ~= "string" then
         error("Event name must be a string")
     end
-    if handler == nil and type(priority) == "function" then
-        handler = priority
+
+    local priority
+    if handler == nil and type(priority_or_handler) == "function" then
+        handler = priority_or_handler
         priority = EventPriority.NORMAL
+    else
+        priority = priority_or_handler
     end
+
     if type(handler) ~= "function" then
         error("Event handler must be a function")
     end
@@ -216,5 +224,6 @@ function Script:registerListener(event, priority, handler)
     if not self.hooks[event] then
         self.hooks[event] = {}
     end
-    table.insert(self.hooks[event], {priority = priority, handler = handler})
+
+    table.insert(self.hooks[event], { priority = priority, handler = handler })
 end

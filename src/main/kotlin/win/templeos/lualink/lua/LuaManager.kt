@@ -140,25 +140,35 @@ class LuaManager(private val plugin: LuaLink, luaRuntime: LuaRuntimes) {
 
         lua.push(JFunction { it ->
             // The first argument is a Lua function
-            if (!it.isFunction(-1)) {
+            if (!it.isFunction(-2)) {
                 it.error("Expected a function as the first argument")
                 return@JFunction 0
             }
 
+            // The second argument is a boolean indicating if it should be unrefed after execution
+            val shouldUnref = if (it.isBoolean(-1)) it.toBoolean(-1) else false
+
             // Create a reference to the function at stack position 1
-            it.pushValue(-1) // Duplicate the function on the stack
+            it.pushValue(-2) // Duplicate the function on the stack
             val ref = it.ref() // Store in registry and get reference
+
 
             val runnable: BukkitRunnable = object : BukkitRunnable() {
                 override fun run() {
-                    // Get the Lua function from the registry using the reference
-                    it.refGet(ref)
+                    synchronized(lua.mainState) {
+                        // Get the Lua function from the registry using the reference
+                        it.refGet(ref)
 
-                    // Push this runnable as the first argument
-                    it.pushJavaObject(this)
+                        // Push this runnable as the first argument
+                        it.pushJavaObject(this)
 
-                    // Call the function with pcall (1 arg, 0 returns)
-                    it.pCall(1, 0)
+                        // Call the function with pcall (1 arg, 0 returns)
+                        it.pCall(1, 0)
+
+                        if (shouldUnref) {
+                            it.unref(ref)
+                        }
+                    }
                 }
 
                 // Clean up the reference when the runnable is cancelled/finished
@@ -178,6 +188,22 @@ class LuaManager(private val plugin: LuaLink, luaRuntime: LuaRuntimes) {
             return@JFunction 2
         })
         lua.setGlobal("__createRunnable")
+
+        // Create a function to ref stuff. Mainly used to ensure references to tasks are kept alive
+        lua.push(JFunction { it ->
+            if (!it.isFunction(-1)) {
+                it.error("Expected a function as the first argument")
+                return@JFunction 0
+            }
+
+            it.pushValue(-1)
+            val ref = it.ref()
+
+            it.push(ref)
+
+            return@JFunction 1
+        })
+        lua.setGlobal("__ref")
 
         // Create a function to unref stuff. Mainly used to ensure references to tasks are cleaned up
         lua.push(JFunction { it ->

@@ -32,55 +32,17 @@ function Scheduler.new(plugin, script)
     return self
 end
 
---- Wraps the handler function as a Java runnable to be used with the scheduler
----@param handler function The handler function to wrap
----@return function A runnable proxy that can be executed by the scheduler
-function Scheduler:_wrapHandlerAsRunnable(handler)
-    if type(handler) ~= "function" then
-        error("Handler must be a function")
-    end
-    if not self.plugin then
-        error("Plugin instance is not set")
-    end
-    if not self.script then
-        error("Script instance is not set")
-    end
-    local runnableProxy = {}
-    local script = self.script -- Not entirely sure why this is needed, but it seems to be a workaround for a scoping issue
-    function runnableProxy:run()
-        local function errorHandler(err)
-            return debug.traceback(tostring(err), 2)
-        end
-
-        local success, err = xpcall(function()
-            handler()
-        end, errorHandler)
-
-        if not success then
-            script.logger:warning("Error in scheduled task: " .. err)
-        end
-    end
-    local runnable = java.proxy("java.lang.Runnable", runnableProxy)
-    return runnable
-end
-
 --- Schedule a task to run on the next tick
 ---@param task function The task to run
 ---@return Task The scheduled task
 function Scheduler:run(handler)
-    local luaRef = nil
     local success, task = pcall(function()
-        local runnable, ref = __createRunnable(handler)
-        luaRef = ref
+        local runnable, ref = __createRunnable(handler, true) -- Unref automatically after exec
         return runnable:runTask(self.plugin)
     end)
     if not success then
         self.script.logger:warning("Error scheduling task: " .. err)
         return nil
-    end
-
-    if luaRef then
-        __unref(luaRef) -- Ensure we unref the Lua reference
     end
 
     return task
@@ -90,10 +52,8 @@ end
 ---@param task function The task to run
 ---@return Task The scheduled task
 function Scheduler:runAsync(handler)
-    local luaRef = nil
     local success, task = pcall(function()
-        local runnable, ref = __createRunnable(handler)
-        luaRef = ref
+        local runnable, ref = __createRunnable(handler, true) -- Unref automatically after exec
         return runnable:runTaskAsynchronously(self.plugin)
     end)
     if not success then
@@ -101,9 +61,6 @@ function Scheduler:runAsync(handler)
         return nil
     end
 
-    if luaRef then
-        __unref(luaRef)
-    end
     return task
 end
 

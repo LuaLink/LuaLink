@@ -187,9 +187,10 @@ local sharedEnv = {
     getmetatable = makeReadOnly(getmetatable),
     setmetatable = makeReadOnly(setmetatable),
 
-    -- LuaLink internal
+    -- LuaLink globals
     server = server,
     import = java.import, -- Simple alias for java.import
+    synchronized = __synchronized
 }
 
 local globalModuleCache = {} -- Global cache for modules in the libs folder

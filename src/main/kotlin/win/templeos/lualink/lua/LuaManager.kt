@@ -220,6 +220,36 @@ class LuaManager(private val plugin: LuaLink, luaRuntime: LuaRuntimes) {
         })
         lua.setGlobal("__unref")
 
+       lua.push(JFunction { it ->
+           // The first argument is a Java object
+           if (!it.isJavaObject(-2)) {
+               it.error("Expected a Java object as the first argument")
+               return@JFunction 0
+           }
+
+           // The second argument is a Lua function
+           if (!it.isFunction(-1)) {
+               it.error("Expected a Lua function as the second argument")
+               return@JFunction 0
+           }
+
+           // Get the Java object
+           val javaObject: Any? = it.toJavaObject(-2)
+
+           if (javaObject != null) {
+               synchronized(javaObject) {
+                   it.pushValue(-1)
+
+                   it.pCall(0, 0)
+               }
+           } else {
+             it.error("Java object is null")
+           }
+
+           return@JFunction 0
+       })
+       lua.setGlobal("__synchronized")
+
         // Load the script class
         val scriptCode = loadResourceAsStringByteBuffer(LUA_SCRIPT_CLASS_PATH)
         lua.load(scriptCode, "script.lua")

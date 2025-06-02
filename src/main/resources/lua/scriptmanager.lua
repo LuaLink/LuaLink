@@ -1,14 +1,4 @@
-local ComponentLogger = java.import("net.kyori.adventure.text.logger.slf4j.ComponentLogger")
 local Logger = java.import("java.util.logging.Logger")
-local MiniMessage = java.import("net.kyori.adventure.text.minimessage.MiniMessage")
-
-local ScriptManagerLogger = Logger:getLogger("LuaLink/ScriptManager")
-
-local function print(...)
-    local args = { ... }
-    local message = table.concat(args, " ")
-    ScriptManagerLogger:info(message)
-end
 
 ---@class ScriptManager
 ---@field scripts table<string, boolean> Table of loaded scripts

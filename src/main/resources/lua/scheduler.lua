@@ -71,7 +71,7 @@ end
 function Scheduler:runDelayed(handler, delay)
     local luaRef = nil
     local success, task = pcall(function()
-        local runnable, ref = __createRunnable(handler)
+        local runnable, ref = __createRunnable(handler, false)
         luaRef = ref
         return runnable:runTaskLater(self.plugin, delay)
     end)
@@ -91,7 +91,7 @@ end
 function Scheduler:runDelayedAsync(handler, delay)
     local luaRef = nil
     local success, task = pcall(function()
-        local runnable, ref = __createRunnable(handler)
+        local runnable, ref = __createRunnable(handler, false)
         luaRef = ref
         return runnable:runTaskLaterAsynchronously(self.plugin, delay)
     end)
@@ -112,7 +112,7 @@ end
 function Scheduler:runRepeating(handler, delay, period)
     local luaRef = nil
     local success, task = pcall(function()
-        local runnable, ref = __createRunnable(handler)
+        local runnable, ref = __createRunnable(handler, false)
         luaRef = ref
         return runnable:runTaskTimer(self.plugin, delay, period)
     end)
@@ -133,7 +133,7 @@ end
 function Scheduler:runRepeatingAsync(handler, delay, period)
     local luaRef = nil
     local success, task = pcall(function()
-        local runnable, ref = __createRunnable(handler)
+        local runnable, ref = __createRunnable(handler, false)
         return runnable:runTaskTimerAsynchronously(self.plugin, delay, period)
     end)
     if not success then

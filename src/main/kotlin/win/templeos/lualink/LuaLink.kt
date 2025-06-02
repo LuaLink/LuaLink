@@ -1,6 +1,7 @@
 package win.templeos.lualink
 
 import org.bstats.bukkit.Metrics
+import org.bstats.charts.SimplePie
 import org.bukkit.plugin.java.JavaPlugin
 import win.templeos.lualink.config.LuaLinkConfigManager
 import win.templeos.lualink.listeners.ServerLoadListener
@@ -26,5 +27,8 @@ class LuaLink : JavaPlugin() {
 
     private fun enableBStats() {
         val metrics: Metrics = Metrics(this, PLUGIN_ID)
+        metrics.addCustomChart(SimplePie("lua_runtime") {
+            luaManager.getLuaRuntime()
+        })
     }
 }

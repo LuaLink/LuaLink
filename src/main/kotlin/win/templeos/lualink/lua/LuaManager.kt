@@ -296,4 +296,16 @@ class LuaManager(private val plugin: LuaLink, luaRuntime: LuaRuntimes) {
         scriptManagerTable?.get("unloadAllScripts")?.call()
         lua.close()
     }
+
+    /**
+     * Returns the selected Lua runtime as a string.
+     * @return The name of the Lua runtime.
+     */
+    fun getLuaRuntime(): String {
+        return when (lua) {
+            is LuaJit -> "LuaJIT"
+            is Lua54 -> "Lua 5.4"
+            else -> "Unknown"
+        }
+    }
 }

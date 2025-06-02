@@ -6,51 +6,66 @@ local Logger = java.import("java.util.logging.Logger")
 ScriptManager = {}
 
 
---- Helper function to make a table read-only (including nested tables)
----@param t table The table to make read-only
+--- Helper function to make a table or function read-only
+---@param obj table|function The table or function to make read-only
 ---@param visited table Table to track already processed tables (prevents circular references)
----@return table The read-only table
-local function makeReadOnly(t, visited)
-    if type(t) ~= "table" then return t end
+---@return table|function The read-only table or function
+local function makeReadOnly(obj, visited)
+    if type(obj) == "function" then
+        local proxy = {}
+        local mt = {
+            __index = obj, -- Allow calling the function
+            __newindex = function(_, key, value)
+                error("Attempt to modify a read-only function", 2)
+            end,
+            __call = function(_, ...)
+                return obj(...)
+            end,
+            __metatable = "The metatable is protected" -- Prevent changing the metatable
+        }
+        return setmetatable(proxy, mt)
+    elseif type(obj) == "table" then
+        visited = visited or {}
 
-    visited = visited or {}
-
-    -- Check if we've already processed this table
-    if visited[t] then
-        return visited[t]
-    end
-
-    -- Create a proxy table
-    local proxy = {}
-    -- Mark this table as being processed
-    visited[t] = proxy
-
-    -- Process all nested tables
-    for k, v in pairs(t) do
-        if type(v) == "table" then
-            proxy[k] = makeReadOnly(v, visited)
-        else
-            proxy[k] = v
+        -- Check if we've already processed this table
+        if visited[obj] then
+            return visited[obj]
         end
+
+        -- Create a proxy table
+        local proxy = {}
+        -- Mark this table as being processed
+        visited[obj] = proxy
+
+        -- Process all nested tables
+        for k, v in pairs(obj) do
+            if type(v) == "table" or type(v) == "function" then
+                proxy[k] = makeReadOnly(v, visited)
+            else
+                proxy[k] = v
+            end
+        end
+
+        -- Create a protected proxy for this table
+        local mt = {
+            __index = proxy,
+
+            __newindex = function(_, k, v)
+                error("Attempt to modify a read-only table", 2)
+            end,
+
+            -- Prevent changing the metatable
+            __metatable = "The metatable is protected",
+
+            -- Forward pairs/ipairs to the original table
+            __pairs = function() return pairs(proxy) end,
+            __ipairs = function() return ipairs(proxy) end
+        }
+
+        return setmetatable({}, mt)
+    else
+        error("Expected a table or function")
     end
-
-    -- Create a protected proxy for this table
-    local mt = {
-        __index = proxy,
-
-        __newindex = function(_, k, v)
-            error("Attempt to modify a read-only table", 2)
-        end,
-
-        -- Prevent changing the metatable
-        __metatable = "The metatable is protected",
-
-        -- Forward pairs/ipairs to the original table
-        __pairs = function() return pairs(proxy) end,
-        __ipairs = function() return ipairs(proxy) end
-    }
-
-    return setmetatable({}, mt)
 end
 
 --- Helper function to deep copy tables
@@ -159,18 +174,18 @@ local sharedEnv = {
     io = makeReadOnly(copyTable(io)),
     java = makeReadOnly(copyTable(java)),
     -- Expose standard Lua functions
-    pcall = pcall,
-    assert = assert,
-    error = error,
-    type = type,
-    pairs = pairs,
-    ipairs = ipairs,
-    tostring = tostring,
-    tonumber = tonumber,
-    select = select,
-    next = next,
-    getmetatable = getmetatable,
-    setmetatable = setmetatable,
+    pcall = makeReadOnly(pcall),
+    assert = makeReadOnly(assert),
+    error = makeReadOnly(error),
+    type = makeReadOnly(type),
+    pairs = makeReadOnly(pairs),
+    ipairs = makeReadOnly(ipairs),
+    tostring = makeReadOnly(tostring),
+    tonumber = makeReadOnly(tonumber),
+    select = makeReadOnly(select),
+    next = makeReadOnly(next),
+    getmetatable = makeReadOnly(getmetatable),
+    setmetatable = makeReadOnly(setmetatable),
 
     -- LuaLink internal
     server = server,

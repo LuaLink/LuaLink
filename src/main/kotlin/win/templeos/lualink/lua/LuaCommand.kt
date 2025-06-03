@@ -43,10 +43,9 @@ class LuaCommand(private val command: LuaValue) : Command(command.get("metadata"
         val result = tabCompleteHandler.call(sender, args)[0]
         if (result.type() == Lua.LuaType.TABLE) {
             val list = result.toJavaObject() as HashMap<*, *>
-            return list.values.toMutableList() as MutableList<String>
+            return (if (args != null) list.values.filter { it.toString().contains(args.last(), true) } else list.values).toMutableList() as MutableList<String>
         }
-
         // Default behavior: Return online player names
-        return Bukkit.getOnlinePlayers().map { player -> player.name }.toMutableList()
+        return null!!
     }
 }

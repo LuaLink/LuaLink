@@ -49,7 +49,9 @@ paper {
     main = "win.templeos.lualink.LuaLink"
     apiVersion = "1.20"
     generateLibrariesJson = true
-    authors = listOf("Saturn745")
+    authors = listOf("Saturn745", "Grabsky")
+    website = "https://lualink.github.io/docs/"
+    description = "A Lua plugin for Paper servers, allowing you to run Lua scripts and commands in Minecraft."
     loader = "win.templeos.lualink.PluginLibrariesLoader"
     // This allows the plugin to access external plugins' APIs without depending on them.
     // This may cause conflicts if different versions of the same dependency are loaded by different plugins.

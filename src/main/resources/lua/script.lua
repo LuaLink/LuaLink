@@ -55,7 +55,9 @@ function Script.new(name, server, plugin, logger, debug)
                     end
                 
                     local success, err = xpcall(function()
-                        handler(event)
+                        if eventClass.class:isInstance(event) then
+                            handler(event)
+                        end
                     end, errorHandler)
                 
                     if not success then

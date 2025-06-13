@@ -186,6 +186,8 @@ local sharedEnv = {
     next = makeReadOnly(next),
     getmetatable = makeReadOnly(getmetatable),
     setmetatable = makeReadOnly(setmetatable),
+    rawget = makeReadOnly(rawget),
+    rawset = makeReadOnly(rawset),
 
     -- LuaLink globals
     server = server,

@@ -15,6 +15,7 @@ import org.eclipse.aether.artifact.DefaultArtifact;
 import org.eclipse.aether.graph.Dependency;
 import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.util.repository.AuthenticationBuilder;
+import org.slf4j.Logger;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -50,7 +51,7 @@ public final class PluginLibrariesLoader implements PluginLoader {
                 throw new IOException("File 'paper-libraries.json' not found in the classpath.");
             // Extracting file contents to new MavenLibraryResolver instance.
             final MavenLibraryResolver iLibraries = gson.fromJson(new InputStreamReader(stream, StandardCharsets.UTF_8), PluginLibraries.class)
-                    .toMavenLibraryResolver();
+                    .toMavenLibraryResolver(classpathBuilder.getContext().getLogger(), RepositoryContext.INTERNAL);
             // Adding library(-ies) to the PluginClasspathBuilder.
             classpathBuilder.addLibrary(iLibraries);
         } catch (final IOException e) {
@@ -77,7 +78,7 @@ public final class PluginLibrariesLoader implements PluginLoader {
             try {
                 // Extracting file contents to new MavenLibraryResolver instance.
                 final MavenLibraryResolver eDependencies = gson.fromJson(new InputStreamReader(new FileInputStream(eLibrariesFile), StandardCharsets.UTF_8), PluginLibraries.class)
-                        .toMavenLibraryResolver();
+                        .toMavenLibraryResolver(classpathBuilder.getContext().getLogger(), RepositoryContext.USER_SPECIFIED);
                 // Adding library(-ies) to the PluginClasspathBuilder.
                 classpathBuilder.addLibrary(eDependencies);
             } catch (final FileNotFoundException e) {
@@ -88,12 +89,40 @@ public final class PluginLibrariesLoader implements PluginLoader {
 
     private record PluginLibraries(Map<String, RepositoryInfo> repositories, List<String> dependencies) {
 
-        public MavenLibraryResolver toMavenLibraryResolver() {
+        public MavenLibraryResolver toMavenLibraryResolver(final @NotNull Logger logger, final @NotNull RepositoryContext context) {
             final MavenLibraryResolver resolver = new MavenLibraryResolver();
             // Adding repositories to library resolver.
             repositories.entrySet().stream()
                     .map(entry -> {
-                        final RemoteRepository.Builder builder = new RemoteRepository.Builder(entry.getKey(), "default", entry.getValue().url);
+                        // Preparing the RemoteRepository builder.
+                        // This is filled in the next step, and re-used later to apply authentication credentials if specified.
+                        RemoteRepository.Builder builder;
+                        // Field 'MavenLibraryResolver.MAVEN_CENTRAL_DEFAULT_MIRROR' was added in one of the recent Paper versions and may not be available on < 1.21.6.
+                        try {
+                            // Replacing Maven Central repository with a pre-configured mirror.
+                            // See: https://docs.papermc.io/paper/dev/getting-started/paper-plugins/#loaders
+                            if (entry.getValue().url.contains("maven.org") == true || entry.getValue().url.contains("maven.apache.org") == true) {
+                                if (context == RepositoryContext.INTERNAL) {
+                                    builder = new RemoteRepository.Builder(entry.getKey(), "default", MavenLibraryResolver.MAVEN_CENTRAL_DEFAULT_MIRROR);
+                                } else {
+                                    logger.warn("Found at least one Maven Central repository in use that was not automatically replaced. Adjust contents of 'libraries.json' to get rid of this warning.");
+                                    logger.warn("While the plugin should work as usual, please keep in mind that downloading from Maven Central may be against their TOS and can be subject to a rate-limit.");
+                                    logger.warn("- " + entry.getValue().url + " (" + context + ")");
+                                    builder = new RemoteRepository.Builder(entry.getKey(), "default", entry.getValue().url);
+                                }
+                            } else {
+                                builder = new RemoteRepository.Builder(entry.getKey(), "default", entry.getValue().url);
+                            }
+                        } catch (final NoSuchFieldError e) {
+                            if (context == RepositoryContext.INTERNAL) {
+                                builder = new RemoteRepository.Builder(entry.getKey(), "default", "https://maven-central.storage-download.googleapis.com/maven2");
+                            } else {
+                                logger.warn("Replacing Maven Central repository with pre-configured mirror failed. As of now, this feature is available only on Paper 1.21.6 #11 and higher.");
+                                logger.warn("While the plugin should work as usual, please keep in mind that downloading from Maven Central may be against their TOS and can be subject to a rate-limit.");
+                                logger.warn("- " + entry.getValue().url + " (" + context + ")");
+                                builder = new RemoteRepository.Builder(entry.getKey(), "default", entry.getValue().url);
+                            }
+                        }
                         // Building and adding Authentication if specified.
                         if (entry.getValue().username != null && entry.getValue().password != null)
                             builder.setAuthentication(new AuthenticationBuilder().addUsername(entry.getValue().username).addPassword(entry.getValue().password).build());
@@ -114,6 +143,13 @@ public final class PluginLibrariesLoader implements PluginLoader {
      * Holds information about maven repository.
      */
     private record RepositoryInfo(@NotNull String url, @Nullable String username, @Nullable String password) { /* DATA ONLY */ }
+
+    /**
+     * Represents the context in which the library is being resolved.
+     */
+    private enum RepositoryContext {
+        INTERNAL, USER_SPECIFIED
+    }
 
     /**
      * Converts JSON repository definition to {@link RepositoryInfo} object.

@@ -1,4 +1,5 @@
 // External libraries to be loaded for use with scripts. Server must be restarted for the changes to take effect.
+// IMPORTANT: If you wish to resolve libraries from Maven Central, you're strongly advised to instead use a mirror.
 {
   "repositories": {
     // "RepositoryName": "https://repo.example.com/releases"

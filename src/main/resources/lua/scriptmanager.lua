@@ -1,14 +1,4 @@
-local ComponentLogger = java.import("net.kyori.adventure.text.logger.slf4j.ComponentLogger")
 local Logger = java.import("java.util.logging.Logger")
-local MiniMessage = java.import("net.kyori.adventure.text.minimessage.MiniMessage")
-
-local ScriptManagerLogger = Logger:getLogger("LuaLink/ScriptManager")
-
-local function print(...)
-    local args = { ... }
-    local message = table.concat(args, " ")
-    ScriptManagerLogger:info(message)
-end
 
 ---@class ScriptManager
 ---@field scripts table<string, boolean> Table of loaded scripts
@@ -16,51 +6,66 @@ end
 ScriptManager = {}
 
 
---- Helper function to make a table read-only (including nested tables)
----@param t table The table to make read-only
+--- Helper function to make a table or function read-only
+---@param obj table|function The table or function to make read-only
 ---@param visited table Table to track already processed tables (prevents circular references)
----@return table The read-only table
-local function makeReadOnly(t, visited)
-    if type(t) ~= "table" then return t end
+---@return table|function The read-only table or function
+local function makeReadOnly(obj, visited)
+    if type(obj) == "function" then
+        local proxy = {}
+        local mt = {
+            __index = obj, -- Allow calling the function
+            __newindex = function(_, key, value)
+                error("Attempt to modify a read-only function", 2)
+            end,
+            __call = function(_, ...)
+                return obj(...)
+            end,
+            __metatable = "The metatable is protected" -- Prevent changing the metatable
+        }
+        return setmetatable(proxy, mt)
+    elseif type(obj) == "table" then
+        visited = visited or {}
 
-    visited = visited or {}
-
-    -- Check if we've already processed this table
-    if visited[t] then
-        return visited[t]
-    end
-
-    -- Create a proxy table
-    local proxy = {}
-    -- Mark this table as being processed
-    visited[t] = proxy
-
-    -- Process all nested tables
-    for k, v in pairs(t) do
-        if type(v) == "table" then
-            proxy[k] = makeReadOnly(v, visited)
-        else
-            proxy[k] = v
+        -- Check if we've already processed this table
+        if visited[obj] then
+            return visited[obj]
         end
+
+        -- Create a proxy table
+        local proxy = {}
+        -- Mark this table as being processed
+        visited[obj] = proxy
+
+        -- Process all nested tables
+        for k, v in pairs(obj) do
+            if type(v) == "table" or type(v) == "function" then
+                proxy[k] = makeReadOnly(v, visited)
+            else
+                proxy[k] = v
+            end
+        end
+
+        -- Create a protected proxy for this table
+        local mt = {
+            __index = proxy,
+
+            __newindex = function(_, k, v)
+                error("Attempt to modify a read-only table", 2)
+            end,
+
+            -- Prevent changing the metatable
+            __metatable = "The metatable is protected",
+
+            -- Forward pairs/ipairs to the original table
+            __pairs = function() return pairs(proxy) end,
+            __ipairs = function() return ipairs(proxy) end
+        }
+
+        return setmetatable({}, mt)
+    else
+        error("Expected a table or function")
     end
-
-    -- Create a protected proxy for this table
-    local mt = {
-        __index = proxy,
-
-        __newindex = function(_, k, v)
-            error("Attempt to modify a read-only table", 2)
-        end,
-
-        -- Prevent changing the metatable
-        __metatable = "The metatable is protected",
-
-        -- Forward pairs/ipairs to the original table
-        __pairs = function() return pairs(proxy) end,
-        __ipairs = function() return ipairs(proxy) end
-    }
-
-    return setmetatable({}, mt)
 end
 
 --- Helper function to deep copy tables
@@ -142,31 +147,14 @@ local function loadMainFile(scriptName, mainPath)
     file:close()
 
     -- Load the main.lua file
-    local isTeal = mainPath:sub(-3) == ".tl"
-    if not isTeal then
-        local f, err = loadfile(mainPath, "t", ScriptManager.createSandbox(scriptName))
-        if not f then
-            error("Failed to load main.lua for script " .. scriptName .. ": " .. tostring(err))
-        end
+    local f, err = loadfile(mainPath, "t", ScriptManager.createSandbox(scriptName))
+    if not f then
+        error("Failed to load main.lua for script " .. scriptName .. ": " .. tostring(err))
+    end
 
-        local success, result = pcall(f)
-        if not success then
-            ScriptManager.environments[scriptName] = nil
-            error("Error running main.lua for script " .. scriptName .. ": " .. tostring(result))
-        end
-    else 
-        -- We can use tl.load which acts like Lua's load() function but for teal files
-        local code = io.open(mainPath, "r"):read("*a")
-        local f, err = tl.load(code, mainPath, "t", ScriptManager.createSandbox(scriptName))
-        if not f then
-            error("Failed to load main.tl for script " .. scriptName .. ": " .. tostring(err))
-        end
-        local success, result = pcall(f)
-        if not success then
-            ScriptManager.environments[scriptName] = nil
-            error("Error running main.tl for script " .. scriptName .. ": " .. tostring(result))
-        end
-        -- Teal files are compiled to Lua, so we need to run the result
+    local success, result = pcall(f)
+    if not success then
+        error("Error running main.lua for script " .. scriptName .. ": " .. tostring(result))
     end
 end
 
@@ -186,22 +174,25 @@ local sharedEnv = {
     io = makeReadOnly(copyTable(io)),
     java = makeReadOnly(copyTable(java)),
     -- Expose standard Lua functions
-    pcall = pcall,
-    assert = assert,
-    error = error,
-    type = type,
-    pairs = pairs,
-    ipairs = ipairs,
-    tostring = tostring,
-    tonumber = tonumber,
-    select = select,
-    next = next,
-    getmetatable = getmetatable,
-    setmetatable = setmetatable,
+    pcall = makeReadOnly(pcall),
+    assert = makeReadOnly(assert),
+    error = makeReadOnly(error),
+    type = makeReadOnly(type),
+    pairs = makeReadOnly(pairs),
+    ipairs = makeReadOnly(ipairs),
+    tostring = makeReadOnly(tostring),
+    tonumber = makeReadOnly(tonumber),
+    select = makeReadOnly(select),
+    next = makeReadOnly(next),
+    getmetatable = makeReadOnly(getmetatable),
+    setmetatable = makeReadOnly(setmetatable),
+    rawget = makeReadOnly(rawget),
+    rawset = makeReadOnly(rawset),
 
-    -- LuaLink internal
+    -- LuaLink globals
     server = server,
     import = java.import, -- Simple alias for java.import
+    synchronized = __synchronized
 }
 
 local globalModuleCache = {} -- Global cache for modules in the libs folder
@@ -212,15 +203,13 @@ local function getCustomRequire(scriptName)
             return ScriptManager.environments[scriptName]["_moduleCache"][moduleName]
         end
 
+        -- Define search paths
         local scriptFolder = __plugin:getDataFolder():getAbsolutePath() .. "/scripts/" .. scriptName
         local libsFolder = __plugin:getDataFolder():getAbsolutePath() .. "/libs"
         local searchPaths = {
-            { path = scriptFolder .. "/" .. moduleName:gsub("%.", "/") .. ".lua", cache = ScriptManager.environments[scriptName]["_moduleCache"], isTeal = false },
-            { path = scriptFolder .. "/" .. moduleName:gsub("%.", "/") .. ".tl", cache = ScriptManager.environments[scriptName]["_moduleCache"], isTeal = true },
-            { path = libsFolder .. "/" .. moduleName:gsub("%.", "/") .. "/main.lua", cache = globalModuleCache, isTeal = false },
-            { path = libsFolder .. "/" .. moduleName:gsub("%.", "/") .. "/main.tl", cache = globalModuleCache, isTeal = true },
-            { path = libsFolder .. "/" .. moduleName:gsub("%.", "/") .. ".lua", cache = globalModuleCache, isTeal = false },
-            { path = libsFolder .. "/" .. moduleName:gsub("%.", "/") .. ".tl", cache = globalModuleCache, isTeal = true }
+            { path = scriptFolder .. "/" .. moduleName:gsub("%.", "/") .. ".lua", cache = ScriptManager.environments[scriptName]["_moduleCache"] },
+            { path = libsFolder .. "/" .. moduleName:gsub("%.", "/") .. "/main.lua", cache = globalModuleCache },
+            { path = libsFolder .. "/" .. moduleName:gsub("%.", "/") .. ".lua", cache = globalModuleCache }
         }
 
         -- Attempt to load the module from the search paths
@@ -228,13 +217,7 @@ local function getCustomRequire(scriptName)
             local file = io.open(entry.path, "r")
             if file then
                 file:close()
-                local chunk, loadErr
-                if entry.isTeal then
-                    local code = io.open(entry.path, "r"):read("*a")
-                    chunk, loadErr = tl.load(code, entry.path, "t", ScriptManager.environments[scriptName])
-                else
-                    chunk, loadErr = loadfile(entry.path, "t", ScriptManager.environments[scriptName])
-                end
+                local chunk, loadErr = loadfile(entry.path, "t", ScriptManager.environments[scriptName]) -- Reuse the script's environment
                 if chunk then
                     local success, result = pcall(chunk)
                     if success then
@@ -315,9 +298,7 @@ end
 function ScriptManager.loadScript(scriptName)
     local scriptFolder = __plugin:getDataFolder():getAbsolutePath() .. "/scripts/" .. scriptName
     local initPath = scriptFolder .. "/init.lua"
-    local mainLuaPath = scriptFolder .. "/main.lua"
-    local mainTealPath = scriptFolder .. "/main.tl"
-    local isTeal = false
+    local mainPath = scriptFolder .. "/main.lua"
 
     -- Load init.lua and get metadata
     local metadata = loadInitFile(scriptName, initPath)
@@ -327,22 +308,22 @@ function ScriptManager.loadScript(scriptName)
         checkDependencies(scriptName, metadata.dependencies)
     end
 
-    -- If main.lua doesn't exist, check for main.tl (teal)
-    local mainPath = mainLuaPath
-    local file = io.open(mainLuaPath, "r")
-    if not file then
-        file = io.open(mainTealPath, "r")
-        if file then
-            isTeal = true
-            mainPath = mainTealPath
-        else
-            error("main.lua or main.tl for script " .. scriptName .. " does not exist")
-        end
-    end
-    file:close()
+    local success, err = pcall(function()
+        -- Load main.lua
+        loadMainFile(scriptName, mainPath)
+    end)
 
-    -- Load main file
-    loadMainFile(scriptName, mainPath)
+    if not success then
+        -- Clean up any partial registrations if script fails to load
+        if ScriptManager.environments[scriptName] and ScriptManager.environments[scriptName].script then
+            pcall(function()
+                ScriptManager.environments[scriptName].script:_callUnloadHandlers()
+            end)
+        end
+        ScriptManager.scripts[scriptName] = nil
+        ScriptManager.environments[scriptName] = nil
+        error("Failed to load script '" .. scriptName .. "': " .. tostring(err or "Unknown error"))
+    end
 
     ScriptManager.scripts[scriptName] = true
     local script = ScriptManager.environments[scriptName].script

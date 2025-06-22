@@ -1,0 +1,17 @@
+name: Mirroring
+
+on: [push, delete]
+
+jobs:
+  to_codeberg:
+    runs-on: ubuntu-latest
+    steps:                  
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+        with:
+          fetch-depth: 0
+      - uses: pixta-dev/repository-mirroring-action@674e65a7d483ca28dafaacba0d07351bdcc8bd75 # v1
+        with:
+          target_repo_url:
+            git@codeberg.org:LuaLink/LuaLinkV2.git
+          ssh_private_key:                             
+            ${{ secrets.THE_MACHINE_PRIV }}

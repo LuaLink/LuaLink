@@ -14,9 +14,12 @@ local subcommands = {
                 sender:sendRichMessage("<green>Loaded scripts:")
                 for _, scriptName in ipairs(loadedScripts) do
                     if scriptName == "LuaLink" then
-                        return
+                        goto continue
                     end
                     sender:sendRichMessage(" - <yellow>" .. scriptName)
+
+                    ::continue::
+                    -- Skips the LuaLink script from being listed
                 end
             end
         end
@@ -35,11 +38,15 @@ local subcommands = {
                 sender:sendRichMessage("<red>Cannot unload the internal LuaLink script")
                 return
             end
+            if not ScriptManager.isScriptLoaded(scriptName) then
+                sender:sendRichMessage("<red>Script is not loaded: " .. scriptName)
+                return
+            end
             local success, err = ScriptManager.unloadScript(scriptName)
             if success then
                 sender:sendRichMessage("<green>Script unloaded: " .. scriptName)
             else
-                sender:sendRichMessage("<red>Error unloading script: " .. err)
+                sender:sendRichMessage("<red>Error unloading script: " .. (err or "Unknown error"))
             end
         end,
         tabComplete = function(sender, args)
@@ -120,17 +127,20 @@ local subcommands = {
                 sender:sendRichMessage("<red>Cannot reload the internal LuaLink script")
                 return
             end
-
+            if not ScriptManager.isScriptLoaded(scriptName) then
+                sender:sendRichMessage("<red>Script is not loaded: " .. scriptName)
+                return
+            end
             local success, err = ScriptManager.unloadScript(scriptName)
             if not success then
-                sender:sendRichMessage("<red>Error unloading script: " .. err)
+                sender:sendRichMessage("<red>Error unloading script: " .. (err or "Unknown error"))
                 return
             end
             success, err = ScriptManager.loadScript(scriptName)
             if success then
                 sender:sendRichMessage("<green>Script reloaded: " .. scriptName)
             else
-                sender:sendRichMessage("<red>Error reloading script: " .. err)
+                sender:sendRichMessage("<red>Error reloading script: " .. (err or "Unknown error"))
             end
         end,
         tabComplete = function(sender, args)

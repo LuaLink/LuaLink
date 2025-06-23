@@ -12,7 +12,7 @@ plugins {
 val buildNum = System.getenv("GITHUB_RUN_NUMBER") ?: "SNAPSHOT"
 
 group = "win.templeos.lualink"
-version = "1.21.5-$buildNum"
+version = "1.21.6-$buildNum"
 
 apply(from = "gradle/teal.gradle.kts")
 
@@ -36,7 +36,7 @@ dependencies {
     // Kotlin (downloaded and loaded at runtime)
     paperLibrary(kotlin("stdlib"))
     // Paper API
-    compileOnly("io.papermc.paper:paper-api:1.20-R0.1-SNAPSHOT")
+    compileOnly("io.papermc.paper:paper-api:1.21.6-R0.1-SNAPSHOT")
     // LuaJava (cannot be easily relocated or downloaded at runtime)
     implementation("party.iroiro.luajava:luajava:$luaJavaVersion") // Use our fork of the LuaJava library
     implementation("party.iroiro.luajava:luajit:$luaJavaVersion")
@@ -66,7 +66,7 @@ modrinth {
     versionNumber.set(version.toString())
     versionType.set("release")
     uploadFile.set(tasks.shadowJar.get())
-    gameVersions.addAll("1.21.4", "1.21.5")
+    gameVersions.addAll("1.21.4", "1.21.5", "1.21.6")
     loaders.addAll("paper", "purpur")
     changelog.set(System.getenv("GIT_COMMIT_MESSAGE"))
 }
@@ -83,7 +83,7 @@ hangarPublish {
         platforms {
             register(Platforms.PAPER) {
                 jar.set(tasks.shadowJar.flatMap { it.archiveFile })
-                platformVersions.set(listOf("1.21.4", "1.21.5"))
+                platformVersions.set(listOf("1.21.4", "1.21.5", "1.21.6"))
             }
         }
     }
@@ -94,7 +94,7 @@ tasks {
         // Configure the Minecraft version for our task.
         // This is the only required configuration besides applying the plugin.
         // Your plugin's jar (or shadowJar if present) will be used automatically.
-        minecraftVersion("1.21.5")
+        minecraftVersion("1.21.6")
 
         // Make sure runServer is ran with -add-opens=java.base/java.util=ALL-UNNAMED
         jvmArgs(

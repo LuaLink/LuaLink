@@ -29,12 +29,12 @@ class LuaCommand(private val command: LuaValue) : Command(command.get("metadata"
             this.aliases = aliasList.values.map { it.toString() }.toMutableList()
         }
     }
-    override fun execute(sender: CommandSender, commandLabel: String, args: Array<out String>?): Boolean {
+    override fun execute(sender: CommandSender, commandLabel: String, args: Array<out String>): Boolean {
         command.get("handler").call(sender, args)
         return true
     }
 
-    override fun tabComplete(sender: CommandSender, alias: String, args: Array<out String>?): MutableList<String> {
+    override fun tabComplete(sender: CommandSender, alias: String, args: Array<out String>): MutableList<String> {
         val tabCompleteHandler = command.get("metadata").get("tabComplete")
         if (tabCompleteHandler.type() != Lua.LuaType.FUNCTION) {
             // Default behavior: Return online player names
@@ -43,7 +43,7 @@ class LuaCommand(private val command: LuaValue) : Command(command.get("metadata"
         val result = tabCompleteHandler.call(sender, args)[0]
         if (result.type() == Lua.LuaType.TABLE) {
             val list = result.toJavaObject() as HashMap<*, *>
-            return (if (args != null) list.values.filter { it.toString().contains(args.last(), true) } else list.values).toMutableList() as MutableList<String>
+            return (list.values.filter { it.toString().contains(args.last(), true) }).toMutableList() as MutableList<String>
         }
         // Default behavior: Return online player names
         return null!!

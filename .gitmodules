@@ -1,3 +1,0 @@
-[submodule "src/main/resources/lua/teal"]
-	path = src/main/resources/lua/teal
-	url = https://github.com/teal-language/tl.git

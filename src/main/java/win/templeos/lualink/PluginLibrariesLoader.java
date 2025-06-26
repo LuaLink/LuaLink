@@ -1,13 +1,6 @@
 package win.templeos.lualink;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonDeserializationContext;
-import com.google.gson.JsonDeserializer;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParseException;
-import com.google.gson.JsonPrimitive;
+import com.google.gson.*;
 import io.papermc.paper.plugin.loader.PluginClasspathBuilder;
 import io.papermc.paper.plugin.loader.PluginLoader;
 import io.papermc.paper.plugin.loader.library.impl.MavenLibraryResolver;
@@ -40,7 +33,7 @@ public final class PluginLibrariesLoader implements PluginLoader {
 
     private final Gson gson = new GsonBuilder()
             .registerTypeAdapter(RepositoryInfo.class, RepositoryInfoDeserializer.INSTANCE)
-            .setLenient()
+            .setStrictness(Strictness.LENIENT)
             .create();
 
     @Override

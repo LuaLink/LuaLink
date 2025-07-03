@@ -29,6 +29,7 @@ class LuaCommand(private val command: LuaValue) : Command(command.get("metadata"
             this.aliases = aliasList.values.map { it.toString() }.toMutableList()
         }
     }
+
     override fun execute(sender: CommandSender, commandLabel: String, args: Array<out String>): Boolean {
         command.get("handler").call(sender, args)
         return true
@@ -40,11 +41,16 @@ class LuaCommand(private val command: LuaValue) : Command(command.get("metadata"
             // Default behavior: Return online player names
             return Bukkit.getOnlinePlayers().map { player -> player.name }.toMutableList()
         }
-        val result = tabCompleteHandler.call(sender, args)[0]
-        if (result.type() == Lua.LuaType.TABLE) {
-            val list = result.toJavaObject() as HashMap<*, *>
-            return (list.values.filter { it.toString().contains(args.last(), true) }).toMutableList() as MutableList<String>
+        synchronized(tabCompleteHandler.state().mainState) {
+            val result = tabCompleteHandler.call(sender, args)[0]
+            if (result.type() == Lua.LuaType.TABLE) {
+                val list = result.toJavaObject() as HashMap<*, *>
+                return (list.values.filter {
+                    it.toString().contains(args.last(), true)
+                }).toMutableList() as MutableList<String>
+            }
         }
+
         // Default behavior: Return online player names
         return null!!
     }

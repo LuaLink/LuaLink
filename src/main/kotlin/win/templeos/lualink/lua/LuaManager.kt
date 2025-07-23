@@ -175,7 +175,6 @@ class LuaManager(private val plugin: LuaLink, luaRuntime: LuaRuntimes) {
                 override fun cancel() {
                     super.cancel()
                     it.unref(ref)
-                    plugin.logger.info("Runnable cancelled and reference cleaned up")
                 }
             }
 

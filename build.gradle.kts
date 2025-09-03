@@ -12,7 +12,7 @@ plugins {
 val buildNum = System.getenv("GITHUB_RUN_NUMBER") ?: "SNAPSHOT"
 
 group = "win.templeos.lualink"
-version = "1.21.7-$buildNum"
+version = "1.21.8-$buildNum"
 
 repositories {
     mavenLocal()
@@ -34,7 +34,7 @@ dependencies {
     // Kotlin (downloaded and loaded at runtime)
     paperLibrary(kotlin("stdlib"))
     // Paper API
-    compileOnly("io.papermc.paper:paper-api:1.21.6-R0.1-SNAPSHOT")
+    compileOnly("io.papermc.paper:paper-api:1.21.8-R0.1-SNAPSHOT")
     // LuaJava (cannot be easily relocated or downloaded at runtime)
     implementation("party.iroiro.luajava:luajava:$luaJavaVersion") // Use our fork of the LuaJava library
     implementation("party.iroiro.luajava:luajit:$luaJavaVersion")
@@ -64,7 +64,7 @@ modrinth {
     versionNumber.set(version.toString())
     versionType.set("release")
     uploadFile.set(tasks.shadowJar.get())
-    gameVersions.addAll("1.21.4", "1.21.5", "1.21.6", "1.21.7")
+    gameVersions.addAll("1.21.4", "1.21.5", "1.21.6", "1.21.7", "1.21.8")
     loaders.addAll("paper", "purpur")
     changelog.set(System.getenv("GIT_COMMIT_MESSAGE"))
 }
@@ -81,7 +81,7 @@ hangarPublish {
         platforms {
             register(Platforms.PAPER) {
                 jar.set(tasks.shadowJar.flatMap { it.archiveFile })
-                platformVersions.set(listOf("1.21.4", "1.21.5", "1.21.6", "1.21.7"))
+                platformVersions.set(listOf("1.21.4", "1.21.5", "1.21.6", "1.21.7", "1.21.8"))
             }
         }
     }
@@ -89,15 +89,7 @@ hangarPublish {
 
 tasks {
     runServer {
-        // Configure the Minecraft version for our task.
-        // This is the only required configuration besides applying the plugin.
-        // Your plugin's jar (or shadowJar if present) will be used automatically.
-        minecraftVersion("1.21.7")
-
-        // Make sure runServer is ran with -add-opens=java.base/java.util=ALL-UNNAMED
-        jvmArgs(
-            "--add-opens=java.base/java.util=ALL-UNNAMED",
-        )
+        minecraftVersion("1.21.8")
     }
     shadowJar {
         archiveBaseName.set("LuaLink")
@@ -107,6 +99,20 @@ tasks {
     }
 }
 
-tasks.test {
-    useJUnitPlatform()
+// Using JetBrains Runtime for 'runServer' tasks to enable enhanced hot-swap capabilities.
+tasks.withType(xyz.jpenilla.runtask.task.AbstractRun::class) {
+    javaLauncher = javaToolchains.launcherFor {
+        vendor = JvmVendorSpec.JETBRAINS
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+    jvmArgs(
+        // Enables enhanced hot-swap capabilities; slows down the internal server so should be off by default
+        // "-XX:+AllowEnhancedClassRedefinition",
+        // Required for some classes to be accessible from Lua
+        "--add-opens=java.base/java.util=ALL-UNNAMED",
+        // Enables text colors in IntelliJ IDEA debugging console
+        "-Dnet.kyori.ansi.colorLevel=truecolor",
+        // Automatically agrees to Mojang's EULA when runServer is ran for the first time
+        "-Dcom.mojang.eula.agree=true"
+    )
 }

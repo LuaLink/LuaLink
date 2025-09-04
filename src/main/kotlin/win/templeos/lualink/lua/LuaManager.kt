@@ -220,15 +220,28 @@ class LuaManager(private val plugin: LuaLink, luaRuntime: LuaRuntimes) {
         lua.setGlobal("__unref")
 
        lua.push(JFunction { it ->
+           // Function have one argument and the first argument is Lua function; synchronize to the Lua main state
+           if (it.top == 1) {
+               if (!it.isFunction(-1)) {
+                   it.error("First argument must be a Lua function. Syntax: synchronized(function)")
+                   return@JFunction 0
+               }
+               synchronized(lua.mainState) {
+                   it.pushValue(-1)
+                   it.pCall(0, 0)
+               }
+               return@JFunction 0
+           }
+
            // The first argument is a Java object
            if (!it.isJavaObject(-2)) {
-               it.error("Expected a Java object as the first argument")
+               it.error("First argument must be a Java object. Syntax: synchronized(jobject, function)")
                return@JFunction 0
            }
 
            // The second argument is a Lua function
            if (!it.isFunction(-1)) {
-               it.error("Expected a Lua function as the second argument")
+               it.error("Second argument must be a Lua function. Syntax: synchronized(jobject, function)")
                return@JFunction 0
            }
 
@@ -238,11 +251,10 @@ class LuaManager(private val plugin: LuaLink, luaRuntime: LuaRuntimes) {
            if (javaObject != null) {
                synchronized(javaObject) {
                    it.pushValue(-1)
-
                    it.pCall(0, 0)
                }
            } else {
-             it.error("Java object is null")
+               it.error("First argument must be a non-null Java object. Syntax: synchronized(jobject, function)")
            }
 
            return@JFunction 0

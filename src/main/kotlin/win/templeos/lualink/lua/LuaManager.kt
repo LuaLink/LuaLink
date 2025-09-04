@@ -261,6 +261,27 @@ class LuaManager(private val plugin: LuaLink, luaRuntime: LuaRuntimes) {
        })
        lua.setGlobal("__synchronized")
 
+       lua.push(JFunction { it ->
+           if (!it.isFunction(-2)) {
+               it.error("First argument must be a Lua function. Syntax: exceptionally(function, function)")
+               return@JFunction 0
+           }
+           if (!it.isFunction(-1)) {
+               it.error("Second argument must be a Lua function. Syntax: exceptionally(function, function)")
+               return@JFunction 0
+           }
+           try {
+               it.pushValue(-2)
+               it.pCall(0, 0)
+           } catch (thr: Throwable) {
+               it.pushValue(-1)
+               it.pushJavaObject(thr)
+               it.pCall(1, 0)
+           }
+           return@JFunction 0
+       })
+        lua.setGlobal("__exceptionally")
+
         // Load the script class
         val scriptCode = loadResourceAsStringByteBuffer(LUA_SCRIPT_CLASS_PATH)
         lua.load(scriptCode, "script.lua")

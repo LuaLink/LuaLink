@@ -192,7 +192,8 @@ local sharedEnv = {
     -- LuaLink globals
     server = server,
     import = java.import, -- Simple alias for java.import
-    synchronized = __synchronized
+    synchronized = __synchronized,
+    exceptionally = __exceptionally
 }
 
 local globalModuleCache = {} -- Global cache for modules in the libs folder

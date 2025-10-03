@@ -4,7 +4,7 @@ plugins {
     kotlin("jvm") version "2.2.10"
     id("de.eldoria.plugin-yml.paper") version "0.8.0"
     id("xyz.jpenilla.run-paper") version "2.3.1"
-    id("com.gradleup.shadow") version "9.1.0"
+    id("com.gradleup.shadow") version "9.2.2"
     id("com.modrinth.minotaur") version "2.8.10"
     id("io.papermc.hangar-publish-plugin") version "0.1.3"
 }

@@ -12,20 +12,16 @@ plugins {
 val buildNum = System.getenv("GITHUB_RUN_NUMBER") ?: "SNAPSHOT"
 
 group = "win.templeos.lualink"
-version = "1.21.8-$buildNum"
+version = "1.21.10-$buildNum"
+
+kotlin {
+    jvmToolchain(21)
+}
 
 repositories {
     mavenLocal()
     mavenCentral()
     maven("https://repo.papermc.io/repository/maven-public/")
-    maven {
-        url = uri("https://maven.pkg.github.com/lualink/luajava")
-        name = "LuaJava"
-        credentials {
-            username = findProperty("gpr.actor") as String? ?: System.getenv("GITHUB_ACTOR")
-            password = findProperty("gpr.token") as String? ?: System.getenv("GITHUB_TOKEN")
-        }
-    }
 }
 
 val luaJavaVersion:String by project
@@ -34,7 +30,7 @@ dependencies {
     // Kotlin (downloaded and loaded at runtime)
     paperLibrary(kotlin("stdlib"))
     // Paper API
-    compileOnly("io.papermc.paper:paper-api:1.21.8-R0.1-SNAPSHOT")
+    compileOnly("io.papermc.paper:paper-api:1.21.10-R0.1-SNAPSHOT")
     // LuaJava (cannot be easily relocated or downloaded at runtime)
     implementation("party.iroiro.luajava:luajava:$luaJavaVersion") // Use our fork of the LuaJava library
     implementation("party.iroiro.luajava:luajit:$luaJavaVersion")
@@ -64,7 +60,7 @@ modrinth {
     versionNumber.set(version.toString())
     versionType.set("release")
     uploadFile.set(tasks.shadowJar.get())
-    gameVersions.addAll("1.21.4", "1.21.5", "1.21.6", "1.21.7", "1.21.8")
+    gameVersions.addAll("1.21.4", "1.21.5", "1.21.6", "1.21.7", "1.21.8", "1.21.10")
     loaders.addAll("paper", "purpur")
     changelog.set(System.getenv("GIT_COMMIT_MESSAGE"))
 }
@@ -81,7 +77,7 @@ hangarPublish {
         platforms {
             register(Platforms.PAPER) {
                 jar.set(tasks.shadowJar.flatMap { it.archiveFile })
-                platformVersions.set(listOf("1.21.4", "1.21.5", "1.21.6", "1.21.7", "1.21.8"))
+                platformVersions.set(listOf("1.21.4", "1.21.5", "1.21.6", "1.21.7", "1.21.8", "1.21.10"))
             }
         }
     }
@@ -89,7 +85,7 @@ hangarPublish {
 
 tasks {
     runServer {
-        minecraftVersion("1.21.8")
+        minecraftVersion("1.21.10")
     }
     shadowJar {
         archiveBaseName.set("LuaLink")

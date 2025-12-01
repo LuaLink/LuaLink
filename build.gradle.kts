@@ -22,6 +22,14 @@ repositories {
     mavenLocal()
     mavenCentral()
     maven("https://repo.papermc.io/repository/maven-public/")
+    maven {
+        url = uri("https://maven.pkg.github.com/lualink/luajava")
+        name = "LuaJava"
+        credentials {
+            username = findProperty("gpr.actor") as String? ?: System.getenv("GITHUB_ACTOR")
+            password = findProperty("gpr.token") as String? ?: System.getenv("GITHUB_TOKEN")
+        }
+    }
 }
 
 val luaJavaVersion:String by project

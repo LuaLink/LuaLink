@@ -43,7 +43,7 @@ dependencies {
     implementation("party.iroiro.luajava:luajava:$luaJavaVersion") // Use our fork of the LuaJava library
     implementation("party.iroiro.luajava:luajit:$luaJavaVersion")
     implementation("party.iroiro.luajava:lua54:$luaJavaVersion")
-    implementation("org.bstats:bstats-bukkit:3.1.0")
+    implementation("org.bstats:bstats-bukkit:3.2.1")
     // LuaJava natives (cannot be easily relocated or downloaded at runtime)
     runtimeOnly("party.iroiro.luajava:luajit-platform:$luaJavaVersion:natives-desktop")
     runtimeOnly("party.iroiro.luajava:lua54-platform:$luaJavaVersion:natives-desktop")
